@@ -114,8 +114,15 @@ import { liveStatus } from "./engine/execute.js";
 import { getConfig, saveConfig, FIELDS, DEFAULT_CONFIG } from "./engine/config.js";
 import { runExperiment, listExperiments, VARIANTS } from "./engine/experiment.js";
 import { askJSON, LLMError } from "./platform/llm.js";
+import { openDB as openPlatformDB, platformRoutes } from "./platform/api.js";
 
 const DB = openStore(env("ENGINE_DB", "data/engine.db"));
+const PDB = openPlatformDB(env("JEVKNOWS_DB", "data/jevknows.db"));
+const platform = platformRoutes(PDB, {
+  // l'esecuzione vera dei bot arriva con lo scheduler; per ora la route esiste
+  // e dice onestamente che non c'e', invece di fingere di aver avviato qualcosa
+  runBot: null,
+});
 let scanning = false;   // one scan at a time; it spends API calls
 
 const server = Bun.serve({
@@ -181,6 +188,10 @@ const server = Bun.serve({
         return json({ error: String(err.message ?? err) }, 503);
       }
     }
+
+    // route della piattaforma JevKnows: /api/bots...
+    const fromPlatform = await platform(req, pathname);
+    if (fromPlatform) return fromPlatform;
 
     if (pathname === "/api/engine/report") {
       return json(report({ db: DB }));

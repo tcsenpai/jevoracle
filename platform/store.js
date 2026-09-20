@@ -106,6 +106,34 @@ export function openDB(path = "data/jevknows.db") {
     CREATE INDEX IF NOT EXISTS idx_pred_run  ON predictions(run_id);
     CREATE INDEX IF NOT EXISTS idx_runs_bot  ON runs(bot_id, started_at DESC);
 
+    /* Opinioni del side assistant. Tabella separata, non colonne su predictions:
+     * in modalita' blind l'opinione nasce PRIMA della predizione, in review DOPO.
+     * Metterla dentro predictions richiederebbe un UPDATE su una riga dichiarata
+     * immutabile, aprendo la porta a riscritture retroattive del giudizio. */
+    CREATE TABLE IF NOT EXISTS assistant_opinions (
+      id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+      bot_id             INTEGER NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+      bot_config_version INTEGER NOT NULL,
+      mode               TEXT NOT NULL CHECK (mode IN ('pre','blind','review')),
+      created_at         TEXT NOT NULL,
+      event_slug         TEXT NOT NULL,
+      market_label       TEXT NOT NULL,
+      -- NULL finche' la predizione non esiste (modalita' blind e pre)
+      prediction_id      INTEGER REFERENCES predictions(id) ON DELETE SET NULL,
+      probability        REAL,
+      comment            TEXT,
+      gaps_json          TEXT,
+      enriched_json      TEXT,
+      host               TEXT,
+      model              TEXT,
+      latency_ms         INTEGER,
+      attempts           INTEGER,
+      ok                 INTEGER NOT NULL DEFAULT 1,
+      error              TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_op_pred ON assistant_opinions(prediction_id);
+    CREATE INDEX IF NOT EXISTS idx_op_bot  ON assistant_opinions(bot_id, created_at DESC);
+
     CREATE TABLE IF NOT EXISTS experiments (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       bot_id     INTEGER REFERENCES bots(id) ON DELETE SET NULL,
@@ -219,3 +247,30 @@ export function settlePrediction(db, id, outcome, pnlGated, pnlUngated) {
   db.prepare(`UPDATE predictions SET settled_at=?, outcome=?, pnl_gated=?, pnl_ungated=?
               WHERE id=? AND outcome IS NULL`).run(now(), outcome, pnlGated, pnlUngated, id);
 }
+
+/* ---------- opinioni del side assistant ---------- */
+
+export function insertOpinion(db, o) {
+  return Number(db.prepare(`INSERT INTO assistant_opinions
+    (bot_id,bot_config_version,mode,created_at,event_slug,market_label,prediction_id,
+     probability,comment,gaps_json,enriched_json,host,model,latency_ms,attempts,ok,error)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    o.bot_id, o.bot_config_version, o.mode, now(), o.event_slug, o.market_label,
+    o.prediction_id ?? null, o.probability ?? null, o.comment ?? null,
+    JSON.stringify(o.gaps ?? []), o.enriched ? JSON.stringify(o.enriched) : null,
+    o.host ?? null, o.model ?? null, o.latency_ms ?? null, o.attempts ?? null,
+    o.ok ? 1 : 0, o.error ?? null).lastInsertRowid);
+}
+
+/** Unico update ammesso: collegare un'opinione nata prima alla sua predizione.
+ *  Non tocca i valori, solo il legame. */
+export function linkOpinion(db, opinionId, predictionId) {
+  db.prepare("UPDATE assistant_opinions SET prediction_id=? WHERE id=? AND prediction_id IS NULL")
+    .run(predictionId, opinionId);
+}
+
+export const opinionsFor = (db, predictionId) => db.prepare(
+  "SELECT * FROM assistant_opinions WHERE prediction_id=? ORDER BY id").all(predictionId);
+
+export const botOpinions = (db, botId, limit = 100) => db.prepare(
+  "SELECT * FROM assistant_opinions WHERE bot_id=? ORDER BY id DESC LIMIT ?").all(botId, limit);

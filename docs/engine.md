@@ -90,6 +90,71 @@ The dashboard banner turns red when all of them are open.
 
 Do not open them on the strength of a good week.
 
+## What goes into the state
+
+This matters more than anything else in the engine. Jev reads what you hand it and
+nothing else, so the state is the experiment.
+
+Current fields:
+
+| field | what it is |
+| --- | --- |
+| `question_asked` | the market question |
+| `resolution_rules` | the full resolution criteria, usually the most useful field |
+| `window` | today's date and when the market resolves |
+| `subject_area` | at most three tags, for framing |
+| `recent_reporting` | dated news headlines via ddgs, filtered for relevance |
+| `trader_notes` | comments that look like someone reporting a fact |
+
+Two filters do real work here.
+
+**Comments are filtered hard.** Most Polymarket comments are cheering, spam, or
+people talking about the price. Price chatter is the dangerous kind: the whole design
+keeps the market price out of the state, and a comment saying "15% underpriced"
+smuggles it straight back in. On the NATO market the filter cut 239 comments to 8,
+and what survived was cited reporting (Reuters quoting the Romanian president, a
+Politico correction, the Lithuania shootdown) rather than "Памп памп".
+
+**News is filtered for relevance.** Search backends sometimes ignore the query
+outright: a search about Brazil and Lula returned six TASS articles about Russia,
+Iran and Slovakia. Irrelevant news is worse than none, because it drags Jev's
+evidence score down while costing tokens. A result now has to share a distinctive
+word with the query or it is dropped.
+
+## Testing what the context is worth
+
+```bash
+bun run scripts/experiment.js <slug...> [--variants rules,notes,news,full]
+```
+
+Same markets, same questions, four different states. The number to watch is not the
+probability but `evidence_sufficient`. If adding context does not raise it, the
+context was noise.
+
+Measured across three markets:
+
+| variant | mean evidence | mean gap vs crowd | mean tokens |
+| --- | --- | --- | --- |
+| rules only | 12% | 38.2pt | 1011 |
+| + trader notes | 12% | 37.8pt | 1423 |
+| + news | 13% | 39.8pt | 1458 |
+| everything | 17% | 34.2pt | 1870 |
+
+Full context wins on both axes: evidence rises and the gap to the crowd narrows.
+The F1 market was the clearest case, where news alone lifted evidence from 12% to
+19% and pulled an 80 point miss in to 67.5 points. Brazil was the counter-example
+that produced the relevance filter.
+
+None of this says Jev is right. It says the state is better than it was, which is
+the only part we control.
+
+## A note on ddgs
+
+`pip install ddgs`. It rate-limits aggressively under repeated calls and its `auto`
+backend returns nothing, so the module tries bing, then duckduckgo, then yahoo, and
+caches every query for thirty minutes. If ddgs is missing or throttled the engine
+still runs and simply records lower evidence scores. Nothing depends on it.
+
 ## Other networks
 
 Polymarket is Polygon. If Solana or another chain matters later, the venue is

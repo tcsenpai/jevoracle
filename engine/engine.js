@@ -8,6 +8,7 @@
 import { fetchEvent, pickMarket, toJevRequest } from "../scripts/polymarket.js";
 import { openStore, insertPrediction, openPredictions, allPredictions, settle } from "./store.js";
 import { kelly, pnl, summarise } from "./scoring.js";
+import { newsFor } from "./news.js";
 
 const GAMMA = "https://gamma-api.polymarket.com";
 
@@ -18,6 +19,9 @@ export const DEFAULTS = {
   minVolume: 50000,     // thin markets have meaningless prices
   kellyFraction: 0.25,
   maxStakeFraction: 0.05,
+  news: true,           // pull recent reporting via ddgs; degrades quietly if missing
+  newsMax: 6,
+  newsWindow: "w",
 };
 
 const iso = () => new Date().toISOString();
@@ -69,9 +73,17 @@ export async function scan(opts = {}) {
       if (market.yes <= 0.03 || market.yes >= 0.97) continue;
     } catch { continue; }
 
+    // Without reporting, Jev is judging a rulebook. The first live scan showed
+    // exactly that: mean self-reported evidence of 11 percent.
+    let news = { items: [], count: 0, query: null };
+    if (cfg.news) {
+      try { news = await newsFor(ev, market, { max: cfg.newsMax, timelimit: cfg.newsWindow }); }
+      catch { /* ddgs rate-limits; carry on without it */ }
+    }
+
     let answers, ms, request;
     try {
-      ({ request } = toJevRequest(ev, { market }));
+      ({ request } = toJevRequest(ev, { market, news: news.items }));
       const out = await jev(request, key);
       answers = out.data.answers; ms = out.data._ms ?? out.ms; asked++;
     } catch (err) { results.push({ slug: raw.slug, error: String(err.message ?? err) }); continue; }
@@ -101,6 +113,7 @@ export async function scan(opts = {}) {
       stake_gated: gated ? stake : 0,
       stake_ungated: ungated ? stake : 0,
       request, answers, latency_ms: ms,
+      news_count: news.count,
     };
     insertPrediction(db, row); recorded++;
     results.push({ slug: ev.slug, market: market.label, crowd, jev: p, edge, evidence, gated, ungated, side, stake });

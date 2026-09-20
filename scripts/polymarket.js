@@ -12,6 +12,22 @@ const clean = s => String(s ?? "").replace(/\s+\n/g, "\n").trim();
 const num = v => (v == null || v === "" ? null : Number(v));
 const jparse = (v, fallback) => { try { return JSON.parse(v); } catch { return fallback; } };
 
+/* Most Polymarket comments are cheering, spam, or people talking about the price.
+ * Price chatter is the dangerous kind: the whole design keeps the market price out
+ * of the state, and a comment saying "15% underpriced" smuggles it straight back in.
+ * Keep only comments that look like someone reporting a fact. */
+const PRICE_TALK = /\b(\d{1,3}\s?(%|cents?|c\b)|odds|underpriced|overpriced|priced|buy|sell|long|short|shares?|position|pump|dump|bet|betting|ape|moon|profit|entry|exit|copytrade|portfolio)\b/i;
+const FACTY = /\b(said|reported|announced|confirmed|according|official|results?|statement|court|signed|struck|killed|won|lost|elected|vote[sd]?|percent|%|january|february|march|april|may|june|july|august|september|october|november|december|\d{4})\b/i;
+
+function usefulComment(body) {
+  if (body.length < 60 || body.length > 600) return false;
+  // mostly non-latin scripts and emoji walls rarely carry usable evidence
+  const latin = (body.match(/[a-z]/gi) ?? []).length;
+  if (latin / body.length < 0.5) return false;
+  if (PRICE_TALK.test(body)) return false;
+  return FACTY.test(body);
+}
+
 export function slugFromUrl(input) {
   const s = String(input).trim();
   if (!/^https?:\/\//.test(s)) return s.replace(/^\/+|\/+$/g, "");
@@ -57,11 +73,7 @@ export async function fetchEvent(slugOrUrl, { comments = 25 } = {}) {
     try {
       const raw = await get(
         `/comments?parent_entity_type=Event&parent_entity_id=${e.id}&limit=${comments}&order=createdAt&ascending=false`);
-      notes = (raw ?? [])
-        .map(c => clean(c.body))
-        // one-word cheers and price chatter are noise, not evidence
-        .filter(b => b.length >= 40 && b.length <= 600)
-        .slice(0, 12);
+      notes = (raw ?? []).map(c => clean(c.body)).filter(usefulComment).slice(0, 8);
     } catch { /* comments are optional */ }
   }
 
@@ -109,7 +121,8 @@ export function pickMarket(ev, labelHint) {
  * crowd says 28%, the comparison would be worthless: we would be measuring whether
  * Jev can read a number, not whether it can judge the evidence.
  */
-export function toJevRequest(ev, { market, today = new Date().toISOString().slice(0, 10) } = {}) {
+export function toJevRequest(ev, opts = {}) {
+  const { market, today = new Date().toISOString().slice(0, 10) } = opts;
   const m = market ?? pickMarket(ev);
   if (!m) throw new Error("This event has no priceable market.");
 
@@ -117,10 +130,14 @@ export function toJevRequest(ev, { market, today = new Date().toISOString().slic
     question_asked: m.question || ev.title,
     resolution_rules: ev.rules,
     window: `Judged as of ${today}. This market resolves on ${String(m.endDate ?? ev.endDate).slice(0, 10)}.`,
-    subject_area: ev.tags.join(", ") || "unspecified",
   };
+  // Tags are six ways of saying the same thing ("Politics, Elections, World
+  // Elections, Global Elections"). Keep a couple for framing, drop the rest.
+  const tags = ev.tags.slice(0, 3).join(", ");
+  if (tags) state.subject_area = tags;
   if (ev.resolutionSource) state.resolution_source = ev.resolutionSource;
-  if (ev.notes.length) state.public_discussion = ev.notes;
+  if (opts.news?.length) state.recent_reporting = opts.news;
+  if (ev.notes.length) state.trader_notes = ev.notes;
 
   const questions = {
     verdict: {
@@ -146,7 +163,8 @@ export function toJevRequest(ev, { market, today = new Date().toISOString().slic
     evidence_sufficient: {
       type: "noul",
       instructions:
-        "The state contains enough concrete information to judge this responsibly, rather than requiring outside knowledge of current events.",
+        "The state contains enough concrete information to judge this responsibly, rather than requiring outside knowledge of current events. " +
+        "`recent_reporting` is dated news; `trader_notes` are unverified claims by members of the public.",
       criteria: {
         true: "The rules and discussion cover what the question turns on",
         false: "Judging this would mostly rely on facts not present in the state",

@@ -110,6 +110,22 @@ who is currently winning.
 
 Details and caveats are in [docs/polymarket-experiment.md](docs/polymarket-experiment.md).
 
+## Paper trading engine
+
+There is a second page at `/engine.html` that runs a paper trading loop against
+Polymarket: it asks Jev about live markets, records the answer next to the crowd
+price at that moment, and scores everything when the markets resolve.
+
+Nothing is bet. Polymarket has no testnet (pUSD is an ERC-20 on Polygon mainnet),
+so real execution would spend real money. It is stubbed out behind four separate
+locks and the dashboard tells you so.
+
+The interesting part is that every prediction is recorded under two rules at once:
+bet on any large disagreement, or bet only when Jev also reports that it has enough
+evidence to judge. Whether that second rule earns its keep is the experiment.
+
+See [docs/engine.md](docs/engine.md).
+
 ## Project layout
 
 ```
@@ -121,6 +137,7 @@ public/
   jev3d.js         The droid. Three.js, procedural geometry, no model files.
   favicon.svg
 scripts/           Polymarket importer and the comparison CLI
+engine/            Paper trading loop, SQLite store, scoring, execution guard
 design-system/     Design language and UX notes written while building this
 ```
 

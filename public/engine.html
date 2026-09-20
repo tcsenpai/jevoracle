@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jev Oracle Engine</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/engine.css">
+</head><body>
+
+<header>
+  <h1>Jev <b>Engine</b></h1>
+  <span class="muted">paper trading against Polymarket. no money moves.</span>
+  <span class="spacer"></span>
+  <a class="navlink" href="/">Console</a>
+  <button class="ghost" id="settle">Settle resolved</button>
+  <button class="primary" id="scan">Run scan</button>
+</header>
+
+<div class="wrap">
+  <div id="live" class="banner"></div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="two">
+    <div class="card">
+      <h2><span class="dot"></span>Calibration
+        <span class="spacer"></span>
+        <span class="muted" style="text-transform:none;letter-spacing:0">predicted vs actual, settled only</span></h2>
+      <div id="calib"></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Does the evidence gate help?</h2>
+      <div id="gatecmp"></div>
+      <div class="hint">Jev reports its own <code>evidence_sufficient</code> per question.
+        The gated rule only bets when that is high. Both rules are recorded on every
+        row, so the comparison is like for like.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="dot"></span>Predictions <span class="spacer"></span>
+      <span class="muted" id="rowinfo"></span></h2>
+    <div class="tablewrap"><table id="rows">
+      <thead><tr>
+        <th>when</th><th>market</th><th class="r">crowd</th><th class="r">jev</th>
+        <th class="r">edge</th><th class="r">evid</th><th>rule</th><th>side</th>
+        <th class="r">stake</th><th>result</th>
+      </tr></thead><tbody></tbody>
+    </table></div>
+  </section>
+</div>
+
+<script type="module" src="/engine.js"></script>
+</body></html>

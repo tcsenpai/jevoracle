@@ -17,3 +17,6 @@ node_modules/
 .ignore
 opencode.json
 AGENTS.md
+
+# Paper trading record, local to each run
+data/

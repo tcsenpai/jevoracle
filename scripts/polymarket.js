@@ -39,6 +39,10 @@ export async function fetchEvent(slugOrUrl, { comments = 25 } = {}) {
     return {
       label: m.groupItemTitle || m.question || m.slug,
       question: clean(m.question),
+      conditionId: m.conditionId ?? null,
+      // CLOB token ids: [yes, no]. Needed only by the execution path.
+      tokenId: (jparse(m.clobTokenIds, [])[yesIdx >= 0 ? yesIdx : 0]) ?? null,
+      tokenIds: jparse(m.clobTokenIds, []),
       yes: yesIdx >= 0 ? prices[yesIdx] : prices[0] ?? null,
       volume: num(m.volumeNum) ?? num(m.volume),
       weekChange: num(m.oneWeekPriceChange),

@@ -126,6 +126,14 @@ async function decompose({ question, context, n = 5 }) {
   throw new Error(lastError ?? "no decomposition hosts configured");
 }
 
+/* ---- paper trading engine (no money moves; see engine/execute.js) ---- */
+import { scan, settleOpen, report, DEFAULTS } from "./engine/engine.js";
+import { openStore } from "./engine/store.js";
+import { liveStatus } from "./engine/execute.js";
+
+const DB = openStore(env("ENGINE_DB", "data/engine.db"));
+let scanning = false;   // one scan at a time; it spends API calls
+
 const server = Bun.serve({
   port: PORT,
   idleTimeout: 240,
@@ -189,6 +197,40 @@ const server = Bun.serve({
         return json({ error: String(err.message ?? err) }, 503);
       }
     }
+
+    if (pathname === "/api/engine/report") {
+      return json(report({ db: DB }));
+    }
+
+    if (pathname === "/api/engine/scan") {
+      if (req.method !== "POST") return json({ error: "Use POST." }, 405);
+      if (scanning) return json({ error: "A scan is already running." }, 409);
+      let opts = {};
+      try { opts = JSON.parse(await readCapped(req)); } catch {}
+      scanning = true;
+      try {
+        const out = await scan({
+          db: DB, apiKey: KEY,
+          limit: Math.min(Number(opts.limit) || 8, 25),
+          minEdge: Number(opts.minEdge) || DEFAULTS.minEdge,
+          minEvidence: Number(opts.minEvidence) ?? DEFAULTS.minEvidence,
+          bankroll: Number(opts.bankroll) || DEFAULTS.bankroll,
+          note: opts.note,
+        });
+        return json(out);
+      } catch (err) {
+        return json({ error: String(err.message ?? err) }, 500);
+      } finally { scanning = false; }
+    }
+
+    if (pathname === "/api/engine/settle") {
+      if (req.method !== "POST") return json({ error: "Use POST." }, 405);
+      try { return json(await settleOpen({ db: DB })); }
+      catch (err) { return json({ error: String(err.message ?? err) }, 500); }
+    }
+
+    if (pathname === "/api/engine/live")
+      return json(liveStatus());
 
     if (pathname === "/api/config")
       return json({ decompose: DEC_URLS.length > 0, model: DEC_MODEL });

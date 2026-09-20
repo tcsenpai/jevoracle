@@ -80,50 +80,31 @@ RULES:
 - Cover DIFFERENT dimensions (money, capability, timing, external conditions, risk).
 - Do not restate the main question.`;
 
-/** Local models sometimes truncate or wrap their JSON. Take the whole object when it
- *  parses; otherwise salvage every complete factor object that did arrive. */
-function parseFactors(text) {
-  try {
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed?.factors)) return parsed.factors.filter(f => f?.q);
-  } catch {}
-  const out = [];
-  for (const m of text.matchAll(/\{[^{}]*"q"\s*:\s*"[^"]*"[^{}]*\}/g)) {
-    try { const f = JSON.parse(m[0]); if (f?.q) out.push(f); } catch {}
-  }
-  return out;
-}
-
+/* Passa per askJSON, che spegne il reasoning e ritenta fino a 4 volte se il
+ * formato non regge. Misurato su questo stesso prompt: 3.2s contro 24.6s. */
 async function decompose({ question, context, n = 5 }) {
-  const payload = {
+  const need = Math.min(3, n);
+  const usable = f => typeof f?.q === "string" && f.q.trim().length > 15;
+
+  const out = await askJSON({
+    hosts: DEC_URLS,
     model: DEC_MODEL,
+    system: DECOMPOSE_SYSTEM.replace("{N}", String(n)),
+    user: `QUESTION: ${question}\n\nCONTEXT:\n${context}`,
+    maxTokens: 900,
     temperature: 0.4,
-    max_tokens: 900,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: DECOMPOSE_SYSTEM.replace("{N}", String(n)) },
-      { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
-    ],
+    timeoutMs: 45_000,
+    validate: d => {
+      if (!Array.isArray(d?.factors)) return "manca l'array `factors`";
+      const good = d.factors.filter(usable).length;
+      return good >= need ? null : `servono almeno ${need} fattori con una domanda vera, trovati ${good}`;
+    },
+  });
+
+  return {
+    factors: out.data.factors.filter(usable).slice(0, n),
+    host: out.host, model: out.model, attempts: out.attempt,
   };
-  let lastError;
-  for (const base of DEC_URLS) {
-    try {
-      const res = await fetch(`${base}/chat/completions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(DEC_TIMEOUT),
-      });
-      if (!res.ok) { lastError = `${base} returned HTTP ${res.status}`; continue; }
-      const data = await res.json();
-      const factors = parseFactors(data.choices?.[0]?.message?.content ?? "").slice(0, n);
-      if (!factors.length) { lastError = `${base} returned no usable factors`; continue; }
-      return { factors, host: base, model: DEC_MODEL };
-    } catch (err) {
-      lastError = `${base}: ${err.message ?? err}`;
-    }
-  }
-  throw new Error(lastError ?? "no decomposition hosts configured");
 }
 
 /* ---- paper trading engine (no money moves; see engine/execute.js) ---- */
@@ -132,6 +113,7 @@ import { openStore } from "./engine/store.js";
 import { liveStatus } from "./engine/execute.js";
 import { getConfig, saveConfig, FIELDS, DEFAULT_CONFIG } from "./engine/config.js";
 import { runExperiment, listExperiments, VARIANTS } from "./engine/experiment.js";
+import { askJSON, LLMError } from "./platform/llm.js";
 
 const DB = openStore(env("ENGINE_DB", "data/engine.db"));
 let scanning = false;   // one scan at a time; it spends API calls

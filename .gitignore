@@ -1,0 +1,19 @@
+# Secrets. Never commit the real one, .env.example is the template.
+.env
+.env.local
+
+# graft's local graph cache, regenerable with `graft build`
+graft/
+
+node_modules/
+.DS_Store
+*.log
+
+# Local agent/editor tooling, not part of the project
+.claude/
+.mycelium/
+.herdr_sessions/
+.mcp.json
+.ignore
+opencode.json
+AGENTS.md

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jev Oracle</title>
+<meta name="description" content="A console for asking Jev typed questions over your own state. Shows the exact request JSON, the parallel answers, and how much each source mattered.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+</head><body>
+
+<header>
+  <h1>Jev <b>Oracle</b></h1>
+  <span class="muted" id="tagline">typed questions over your state — not a chat</span>
+  <span class="spacer"></span>
+  <button class="ghost sm" id="help">What is this?</button>
+  <button class="ghost" id="again" title="Send the same request again" aria-label="Send again">↻</button>
+  <button class="primary" id="ask">Send <span class="mono" style="opacity:.55">⌘⏎</span></button>
+</header>
+
+<!-- intro / primitive explainer -->
+<section class="intro" id="intro">
+  <h2>Jev answers in types, not sentences.</h2>
+  <p>You send a <b>state</b> (whatever it should reason over) and a map of typed
+     <b>questions</b>. It returns one typed answer per question, with calibrated
+     probabilities — all in a single parallel call. The exact JSON is always visible
+     on the right, and you can edit it directly.</p>
+  <div class="prim">
+    <button data-add="noul"><b>+ Noul</b><span>Is this true? Returns the probability of yes. Use one per label when several could apply.</span></button>
+    <button data-add="choice"><b>+ Choice</b><span>Pick one of my options. Returns the winner, the full distribution, and confidence.</span></button>
+    <button data-add="score"><b>+ Score</b><span>Rate against ordered levels I define. Returns a weighted position on that scale.</span></button>
+  </div>
+  <div class="row">
+    <span class="muted">Or load a worked example:</span>
+    <span id="examples" class="row"></span>
+  </div>
+</section>
+
+<main id="console" hidden>
+  <!-- COLUMN 1 — state + questions -->
+  <div class="col col-in">
+    <div class="card">
+      <h2><span class="dot"></span>State <span class="spacer"></span>
+        <span class="muted" id="ctxinfo"></span>
+        <button class="ghost sm" id="addSrc">+ source</button></h2>
+      <div id="srcs"></div>
+      <div class="hint">Everything Jev sees. Untick a source and resend to measure how much the
+        answer depended on it. Several sources are sent as a named JSON object.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Questions <span class="spacer"></span>
+        <button class="ghost sm" data-add="noul">+ Noul</button>
+        <button class="ghost sm" data-add="choice">+ Choice</button>
+        <button class="ghost sm" data-add="score">+ Score</button></h2>
+      <div id="qs"></div>
+      <div class="hint">Every enabled question is answered in the <b>same</b> call, in parallel.
+        They cannot see each other's answers. The one marked
+        <code>primary</code> is rendered as the headline verdict.</div>
+    </div>
+  </div>
+
+  <!-- COLUMN 2 — the wire format -->
+  <div class="col col-wire">
+    <div class="card wire">
+      <h2><span class="dot"></span>Request <span class="spacer"></span>
+        <span class="wirebadge" id="wirebadge"></span></h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="req">Request</button>
+        <button role="tab" aria-selected="false" data-tab="res">Response</button>
+        <button role="tab" aria-selected="false" data-tab="edit">Edit JSON</button>
+      </div>
+      <pre id="wireReq" class="mono"></pre>
+      <pre id="wireRes" class="mono" hidden></pre>
+      <textarea id="wireEdit" spellcheck="false" hidden aria-label="Edit request JSON"></textarea>
+      <div id="wireMsg" class="hint"></div>
+      <div class="row" id="wireActions" hidden style="margin-top:var(--s1)">
+        <button class="sm" id="applyJson">Apply to controls</button>
+        <button class="ghost sm" id="revertJson">Revert</button>
+      </div>
+      <div class="hint" id="wireHint">This is the exact body POSTed to
+        <code>/v1/systemone</code>. It is built from the controls on the left — and editing it
+        here updates them.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Extras</h2>
+      <label class="ck"><input type="checkbox" id="optDecomp">
+        <span>Break into factors <span class="muted" id="decmodel"></span><br>
+        <span class="hint" style="margin:0">A local LLM proposes sub-questions; <b>Jev judges every one</b>,
+        appended to this same request as Nouls. Adds ~15–30s.</span></span></label>
+      <label class="ck"><input type="checkbox" id="optWhy" checked>
+        <span>Add the “why” questions<br><span class="hint" style="margin:0">Support, obstacles,
+        and whether your state is even sufficient to answer.</span></span></label>
+      <label class="ck"><input type="checkbox" id="optConsist">
+        <span>Consistency check<br><span class="hint" style="margin:0">Sends the primary question
+        3× to show the spread. 2 extra calls.</span></span></label>
+      <div class="gate" style="margin-top:var(--s2)">
+        <span class="muted">Act above</span>
+        <input type="range" id="gate" min="0" max="100" value="70" aria-label="Confidence threshold">
+        <b class="mono" id="gateV">0.70</b>
+      </div>
+      <div class="hint">Confidence below this is tagged <span class="tag hold">hold</span>
+        instead of <span class="tag act">act</span>. Noul has no confidence — it is judged by
+        distance from 0.50.</div>
+    </div>
+  </div>
+
+  <!-- COLUMN 3 — answers -->
+  <div class="col col-out">
+    <div class="card projector">
+      <canvas id="jev3d" aria-hidden="true"></canvas>
+      <div class="projlabel mono" id="jevstate">standby</div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Answers <span class="spacer"></span>
+        <span class="muted" id="usage"></span></h2>
+      <div id="out" aria-live="polite" aria-busy="false"></div>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="/app.js"></script>
+</body></html>

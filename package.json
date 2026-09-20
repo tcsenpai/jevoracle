@@ -1,0 +1,15 @@
+{
+  "name": "jevoracle",
+  "version": "1.0.0",
+  "description": "A console for asking Jev typed questions over your own state",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "scripts": {
+    "start": "bun run server.js",
+    "dev": "bun --watch server.js"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  }
+}

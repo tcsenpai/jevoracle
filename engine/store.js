@@ -38,6 +38,7 @@ export function openStore(path = "data/engine.db") {
       answers_json  TEXT NOT NULL,
       latency_ms    INTEGER,
       news_count    INTEGER DEFAULT 0,
+      model         TEXT,            -- versioned id from the response, not the alias
 
       settled_at    TEXT,
       outcome       INTEGER,         -- 1 = YES, 0 = NO, NULL = open
@@ -59,6 +60,9 @@ export function openStore(path = "data/engine.db") {
   `);
   // added after the first scans; ignore the error when it already exists
   try { db.exec("ALTER TABLE predictions ADD COLUMN news_count INTEGER DEFAULT 0"); } catch {}
+  // jev-latest is a MOVING ALIAS: without this, an experiment that straddles a
+  // release silently becomes an experiment across two different models.
+  try { db.exec("ALTER TABLE predictions ADD COLUMN model TEXT"); } catch {}
   return db;
 }
 
@@ -67,14 +71,14 @@ export const insertPrediction = (db, p) => db.prepare(`
     (created_at,event_slug,event_title,market_label,condition_id,token_id,end_date,
      crowd,jev,edge,evidence,rules_strict,ambiguity,
      gated,ungated,side,stake_gated,stake_ungated,
-     request_json,answers_json,latency_ms,news_count)
-  VALUES (?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?)
+     request_json,answers_json,latency_ms,news_count,model)
+  VALUES (?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?)
 `).run(
   p.created_at, p.event_slug, p.event_title, p.market_label, p.condition_id ?? null,
   p.token_id ?? null, p.end_date ?? null,
   p.crowd, p.jev, p.edge, p.evidence ?? null, p.rules_strict ?? null, p.ambiguity ?? null,
   p.gated ? 1 : 0, p.ungated ? 1 : 0, p.side ?? null, p.stake_gated ?? 0, p.stake_ungated ?? 0,
-  JSON.stringify(p.request), JSON.stringify(p.answers), p.latency_ms ?? null, p.news_count ?? 0);
+  JSON.stringify(p.request), JSON.stringify(p.answers), p.latency_ms ?? null, p.news_count ?? 0, p.model ?? null);
 
 export const openPredictions = db =>
   db.prepare("SELECT * FROM predictions WHERE outcome IS NULL ORDER BY created_at DESC").all();

@@ -83,13 +83,13 @@ export async function scan(opts = {}) {
       catch { /* ddgs rate-limits; carry on without it */ }
     }
 
-    let answers, ms, request;
+    let answers, ms, request, modelId = null;
     try {
       ({ request } = toJevRequest(ev, { market, news: news.items }));
       // honour the Context tab: drop any field the user switched off
       request = applyFields(request, cfg.fields ?? {});
       const out = await jev(request, key);
-      answers = out.data.answers; ms = out.data._ms ?? out.ms; asked++;
+      answers = out.data.answers; ms = out.data._ms ?? out.ms; modelId = out.data.model ?? null; asked++;
     } catch (err) { results.push({ slug: raw.slug, error: String(err.message ?? err) }); continue; }
 
     const p = answers.verdict.noul;
@@ -118,6 +118,7 @@ export async function scan(opts = {}) {
       stake_ungated: ungated ? stake : 0,
       request, answers, latency_ms: ms,
       news_count: news.count,
+      model: modelId,
     };
     insertPrediction(db, row); recorded++;
     results.push({ slug: ev.slug, market: market.label, crowd, jev: p, edge, evidence, gated, ungated, side, stake });

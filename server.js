@@ -130,6 +130,8 @@ async function decompose({ question, context, n = 5 }) {
 import { scan, settleOpen, report, DEFAULTS } from "./engine/engine.js";
 import { openStore } from "./engine/store.js";
 import { liveStatus } from "./engine/execute.js";
+import { getConfig, saveConfig, FIELDS, DEFAULT_CONFIG } from "./engine/config.js";
+import { runExperiment, listExperiments, VARIANTS } from "./engine/experiment.js";
 
 const DB = openStore(env("ENGINE_DB", "data/engine.db"));
 let scanning = false;   // one scan at a time; it spends API calls
@@ -227,6 +229,66 @@ const server = Bun.serve({
       if (req.method !== "POST") return json({ error: "Use POST." }, 405);
       try { return json(await settleOpen({ db: DB })); }
       catch (err) { return json({ error: String(err.message ?? err) }, 500); }
+    }
+
+    if (pathname === "/api/engine/config") {
+      if (req.method === "GET") return json({ config: getConfig(DB), fields: FIELDS, defaults: DEFAULT_CONFIG });
+      if (req.method !== "POST") return json({ error: "Use GET or POST." }, 405);
+      try {
+        const patch = JSON.parse(await readCapped(req));
+        return json({ config: saveConfig(DB, patch) });
+      } catch (err) { return json({ error: String(err.message ?? err) }, 400); }
+    }
+
+    if (pathname === "/api/engine/preview") {
+      if (req.method !== "POST") return json({ error: "Use POST." }, 405);
+      let body = {};
+      try { body = JSON.parse(await readCapped(req)); } catch {}
+      if (!body.slug) return json({ error: "`slug` is required." }, 400);
+      try {
+        const { fetchEvent, pickMarket, toJevRequest } = await import("./scripts/polymarket.js");
+        const { newsFor } = await import("./engine/news.js");
+        const { applyFields, getConfig } = await import("./engine/config.js");
+        const cfg = getConfig(DB);
+        const fields = { ...cfg.fields, ...(body.fields ?? {}) };
+        const ev = await fetchEvent(body.slug, { comments: 60 });
+        const market = pickMarket(ev);
+        if (!market) return json({ error: "No priceable market on that event." }, 400);
+        let news = { items: [] };
+        if (fields.recent_reporting !== false) {
+          try { news = await newsFor(ev, market, { max: cfg.newsMax, timelimit: cfg.newsWindow }); } catch {}
+        }
+        const full = toJevRequest(ev, { market, news: news.items }).request;
+        const kept = applyFields(full, fields);
+        return json({
+          market: market.label, crowd: market.yes,
+          fields: Object.entries(kept.state).map(([key, v]) =>
+            ({ key, chars: JSON.stringify(v).length })),
+          dropped: Object.keys(full.state).filter(k => !(k in kept.state)),
+        });
+      } catch (err) { return json({ error: String(err.message ?? err) }, 500); }
+    }
+
+    if (pathname === "/api/engine/experiments") {
+      return json({ runs: listExperiments(DB), variants: VARIANTS });
+    }
+
+    if (pathname === "/api/engine/experiment") {
+      if (req.method !== "POST") return json({ error: "Use POST." }, 405);
+      if (scanning) return json({ error: "A scan or experiment is already running." }, 409);
+      let body = {};
+      try { body = JSON.parse(await readCapped(req)); } catch {}
+      const slugs = (body.slugs ?? []).map(String).map(s => s.trim()).filter(Boolean).slice(0, 6);
+      if (!slugs.length) return json({ error: "Give at least one event slug or URL." }, 400);
+      scanning = true;
+      try {
+        return json(await runExperiment({
+          db: DB, apiKey: KEY, slugs,
+          variants: (body.variants ?? Object.keys(VARIANTS)).filter(v => VARIANTS[v]),
+          note: body.note,
+        }));
+      } catch (err) { return json({ error: String(err.message ?? err) }, 500); }
+      finally { scanning = false; }
     }
 
     if (pathname === "/api/engine/live")

@@ -21,6 +21,13 @@
 <div class="wrap">
   <div id="live" class="banner"></div>
 
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" aria-selected="true"  data-tab="record">Record</button>
+    <button role="tab" aria-selected="false" data-tab="experiment">Experiment</button>
+    <button role="tab" aria-selected="false" data-tab="context">Context</button>
+  </nav>
+
+  <div class="panel" id="panel-record">
   <section class="kpis" id="kpis"></section>
 
   <section class="two">
@@ -50,6 +57,65 @@
       </tr></thead><tbody></tbody>
     </table></div>
   </section>
+  </div><!-- /panel record -->
+
+  <!-- ================= EXPERIMENT ================= -->
+  <div class="panel" id="panel-experiment" hidden>
+    <section class="card">
+      <h2><span class="dot"></span>Run an A/B</h2>
+      <p class="hint" style="margin-top:0">Same markets, same questions, different
+        context. Watch <b>evidence</b>, not the probability: if extra context does not
+        raise it, the context was noise.</p>
+      <label for="expSlugs">Event slugs or Polymarket URLs, one per line</label>
+      <textarea id="expSlugs" rows="3" spellcheck="false"
+        placeholder="nato-x-russia-military-clash-in-2025&#10;brazil-presidential-election"></textarea>
+      <div class="row" style="margin-top:var(--s2)">
+        <div id="expVariants" class="row"></div>
+        <span class="spacer"></span>
+        <span class="muted" id="expCost"></span>
+        <button class="primary" id="expRun">Run</button>
+      </div>
+      <div class="hint" id="expMsg"></div>
+    </section>
+
+    <section class="card">
+      <h2><span class="dot"></span>Results <span class="spacer"></span>
+        <span class="muted" id="expInfo"></span></h2>
+      <div id="expOut"></div>
+    </section>
+  </div>
+
+  <!-- ================= CONTEXT ================= -->
+  <div class="panel" id="panel-context" hidden>
+    <section class="two">
+      <div class="card">
+        <h2><span class="dot"></span>What Jev receives</h2>
+        <p class="hint" style="margin-top:0">Every scan sends exactly these fields.
+          Jev reads what you give it and nothing else.</p>
+        <div id="cfgFields"></div>
+      </div>
+      <div class="card">
+        <h2><span class="dot"></span>Sources and thresholds</h2>
+        <div id="cfgNums"></div>
+        <div class="row" style="margin-top:var(--s3)">
+          <button class="primary" id="cfgSave">Save</button>
+          <button class="ghost" id="cfgReset">Reset to defaults</button>
+          <span class="spacer"></span><span class="muted" id="cfgMsg"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="dot"></span>Preview <span class="spacer"></span>
+        <span class="muted">the state as it would be sent</span></h2>
+      <div class="row">
+        <input type="text" id="cfgSlug" placeholder="event slug to preview"
+          value="nato-x-russia-military-clash-in-2025" style="flex:1;min-width:220px">
+        <button id="cfgPreview">Preview</button>
+      </div>
+      <div id="cfgOut" class="hint">Shows which fields survive your settings, and how big each is.</div>
+    </section>
+  </div>
 </div>
 
 <script type="module" src="/engine.js"></script>

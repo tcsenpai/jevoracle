@@ -49,3 +49,48 @@ td.mkt small{display:block;color:var(--dim);font-size:11px}
 .badge.n{color:var(--dim);border-color:var(--line)}
 .pos{color:var(--ok)}.neg{color:var(--bad)}
 .empty{color:var(--dim);padding:var(--s4);text-align:center}
+
+/* ---------- tabs ---------- */
+.wrap>.tabs{display:flex;gap:4px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:9px;padding:3px;width:fit-content}
+.wrap>.tabs button{border:none;background:none;color:var(--dim);border-radius:6px;
+  padding:9px 18px;font-size:13px;min-height:42px}
+.wrap>.tabs button[aria-selected=true]{background:var(--acc);color:#03151A;font-weight:700}
+.panel{display:flex;flex-direction:column;gap:var(--s3)}
+
+/* ---------- context tab ---------- */
+.fld{display:flex;gap:11px;align-items:flex-start;padding:10px 0;
+  border-bottom:1px solid var(--line);cursor:pointer;min-height:44px}
+.fld:last-child{border-bottom:none}
+.fld input{margin-top:2px}
+.fld b{font-size:13px;font-weight:600;display:block}
+.fld small{color:var(--dim);font-size:11.5px;line-height:1.5;display:block;margin-top:2px}
+.fld .lock{font-size:9.5px;color:var(--dim);border:1px solid var(--line);
+  border-radius:99px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.num{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--line)}
+.num:last-of-type{border-bottom:none}
+.num b{font-size:13px;font-weight:500;display:block}
+.num small{color:var(--dim);font-size:11.5px;display:block;margin-top:1px}
+.num input,.num select{min-height:40px;padding:7px 9px;font-size:13px;text-align:right}
+.num select{text-align:left}
+
+/* ---------- experiment tab ---------- */
+.vchip{display:flex;gap:7px;align-items:center;border:1px solid var(--line-strong);
+  border-radius:99px;padding:8px 13px;cursor:pointer;font-size:12.5px;min-height:40px}
+.vchip input{margin:0}
+.exp{border:1px solid var(--line);border-radius:var(--r);padding:var(--s2);
+  margin-bottom:var(--s2);background:var(--panel2)}
+.exp h3{margin:0 0 3px;font-size:14px;font-weight:600}
+.exp .meta{color:var(--dim);font-size:11.5px;margin-bottom:var(--s2)}
+.vrow{display:grid;grid-template-columns:120px 62px 1fr 74px;gap:10px;align-items:center;
+  font-size:12.5px;margin-bottom:7px}
+.vrow .lab{color:var(--ink)}
+.vrow .tok{color:var(--dim);font-size:11px;font-family:ui-monospace,Menlo,monospace;text-align:right}
+.vrow .track{height:10px;background:rgba(255,255,255,.07);border-radius:99px;
+  border:1px solid var(--line);overflow:hidden;position:relative}
+.vrow .track i{display:block;height:100%;border-radius:99px;background:var(--acc)}
+.vrow .val{text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--dim)}
+.best{color:var(--ok);font-weight:700}
+.fieldlist{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--dim);
+  margin-top:3px}

@@ -9,6 +9,7 @@ import { fetchEvent, pickMarket, toJevRequest } from "../scripts/polymarket.js";
 import { openStore, insertPrediction, openPredictions, allPredictions, settle } from "./store.js";
 import { kelly, pnl, summarise } from "./scoring.js";
 import { newsFor } from "./news.js";
+import { getConfig, applyFields } from "./config.js";
 
 const GAMMA = "https://gamma-api.polymarket.com";
 
@@ -52,8 +53,9 @@ export async function candidates({ limit = 20, minVolume = DEFAULTS.minVolume } 
 }
 
 export async function scan(opts = {}) {
-  const cfg = { ...DEFAULTS, ...opts };
-  const db = opts.db ?? openStore(cfg.dbPath);
+  const db0 = opts.db ?? openStore(opts.dbPath);
+  const cfg = { ...DEFAULTS, ...getConfig(db0), ...opts };
+  const db = db0;
   const key = cfg.apiKey;
   if (!key) throw new Error("TYPESAFE_API_KEY is required to scan.");
 
@@ -76,7 +78,7 @@ export async function scan(opts = {}) {
     // Without reporting, Jev is judging a rulebook. The first live scan showed
     // exactly that: mean self-reported evidence of 11 percent.
     let news = { items: [], count: 0, query: null };
-    if (cfg.news) {
+    if (cfg.fields?.recent_reporting !== false) {
       try { news = await newsFor(ev, market, { max: cfg.newsMax, timelimit: cfg.newsWindow }); }
       catch { /* ddgs rate-limits; carry on without it */ }
     }
@@ -84,6 +86,8 @@ export async function scan(opts = {}) {
     let answers, ms, request;
     try {
       ({ request } = toJevRequest(ev, { market, news: news.items }));
+      // honour the Context tab: drop any field the user switched off
+      request = applyFields(request, cfg.fields ?? {});
       const out = await jev(request, key);
       answers = out.data.answers; ms = out.data._ms ?? out.ms; asked++;
     } catch (err) { results.push({ slug: raw.slug, error: String(err.message ?? err) }); continue; }

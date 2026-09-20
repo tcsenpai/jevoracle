@@ -125,3 +125,171 @@ async function run(btn, url, label){
 $("#scan").onclick = e => run(e.target, "/api/engine/scan", "Scanning…");
 $("#settle").onclick = e => run(e.target, "/api/engine/settle", "Settling…");
 refresh();
+
+/* ===================== tabs ===================== */
+const PANELS = ["record","experiment","context"];
+function showTab(name){
+  PANELS.forEach(p => $(`#panel-${p}`).hidden = p !== name);
+  document.querySelectorAll("#tabs button").forEach(b =>
+    b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  location.hash = name;
+  if (name === "experiment") loadExperiments();
+  if (name === "context") loadConfig();
+}
+$("#tabs").onclick = e => { const t = e.target.closest("[data-tab]"); if (t) showTab(t.dataset.tab); };
+
+/* ===================== context tab ===================== */
+let CFG = null, FIELDS = [], DEFAULTS = null;
+
+async function loadConfig(){
+  const d = await fetch("/api/engine/config").then(r=>r.json());
+  CFG = d.config; FIELDS = d.fields; DEFAULTS = d.defaults;
+  renderFields(); renderNums();
+}
+function renderFields(){
+  $("#cfgFields").innerHTML = FIELDS.map(f=>`
+    <label class="fld">
+      <input type="checkbox" data-f="${f.key}" ${CFG.fields[f.key]!==false?"checked":""}
+        ${f.locked?"disabled":""}>
+      <span><b>${esc(f.label)}${f.locked?`<span class="lock">always on</span>`:""}</b>
+      <small>${esc(f.help)}</small></span>
+    </label>`).join("");
+  $("#cfgFields").onchange = e => {
+    const k = e.target.dataset.f; if (!k) return;
+    CFG.fields[k] = e.target.checked;
+  };
+}
+function renderNums(){
+  const n = [
+    ["newsMax","News items","How many headlines to pull per market.","number",1,20],
+    ["newsWindow","News window","How far back to search.","select",null,null,
+      [["d","last day"],["w","last week"],["m","last month"],["y","last year"]]],
+    ["minEdge","Min edge","Gap from the crowd before a bet is recorded.","number",0.01,0.5,null,0.01],
+    ["minEvidence","Min evidence","Jev's own sufficiency score for the gated rule.","number",0,1,null,0.05],
+    ["minVolume","Min volume","Skip markets thinner than this, in dollars.","number",0,10000000,null,1000],
+    ["bankroll","Bankroll","Virtual money. Nothing is at risk.","number",10,1000000,null,10],
+  ];
+  $("#cfgNums").innerHTML = n.map(([k,lab,help,type,min,max,opts,step])=>`
+    <div class="num"><div><b>${lab}</b><small>${esc(help)}</small></div>
+    ${type==="select"
+      ? `<select data-n="${k}">${opts.map(([v,l])=>
+          `<option value="${v}" ${CFG[k]===v?"selected":""}>${l}</option>`).join("")}</select>`
+      : `<input type="number" data-n="${k}" value="${CFG[k]}" min="${min}" max="${max}"
+           step="${step??1}">`}</div>`).join("");
+  $("#cfgNums").onchange = e => {
+    const k = e.target.dataset.n; if (!k) return;
+    CFG[k] = e.target.type === "number" ? Number(e.target.value) : e.target.value;
+  };
+}
+$("#cfgSave").onclick = async e => {
+  e.target.disabled = true;
+  try {
+    const r = await fetch("/api/engine/config",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify(CFG)}).then(r=>r.json());
+    CFG = r.config; renderFields(); renderNums();
+    $("#cfgMsg").innerHTML = `<span style="color:var(--ok)">Saved. The next scan uses these.</span>`;
+  } catch(err){ $("#cfgMsg").innerHTML = `<span style="color:var(--bad)">${esc(String(err))}</span>`; }
+  finally { e.target.disabled = false; }
+};
+$("#cfgReset").onclick = async () => {
+  CFG = structuredClone(DEFAULTS); renderFields(); renderNums();
+  $("#cfgMsg").textContent = "Defaults restored. Press Save to keep them.";
+};
+$("#cfgPreview").onclick = async e => {
+  const slug = $("#cfgSlug").value.trim(); if (!slug) return;
+  e.target.disabled = true; $("#cfgOut").textContent = "Building the state…";
+  try {
+    const d = await fetch("/api/engine/preview",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({slug, fields: CFG.fields})}).then(r=>r.json());
+    if (d.error) throw new Error(d.error);
+    const total = d.fields.reduce((a,f)=>a+f.chars,0);
+    $("#cfgOut").innerHTML = `<div style="margin-top:var(--s2)">` + d.fields.map(f=>`
+      <div class="vrow" style="grid-template-columns:150px 1fr 90px">
+        <span class="lab">${esc(f.key)}</span>
+        <div class="track"><i style="width:${Math.min(100,f.chars/Math.max(total,1)*100*2)}%"></i></div>
+        <span class="val">${f.chars} ch</span></div>`).join("") +
+      `<div class="hint">${d.fields.length} fields · ${total} characters · about ${Math.round(total/4)} tokens.
+       ${d.dropped.length?`Switched off: <b>${d.dropped.map(esc).join(", ")}</b>.`:""}</div></div>`;
+  } catch(err){ $("#cfgOut").innerHTML = `<span style="color:var(--bad)">${esc(String(err.message??err))}</span>`; }
+  finally { e.target.disabled = false; }
+};
+
+/* ===================== experiment tab ===================== */
+let VARIANTS = null;
+
+async function loadExperiments(){
+  const d = await fetch("/api/engine/experiments").then(r=>r.json());
+  VARIANTS = d.variants;
+  if (!$("#expVariants").children.length){
+    $("#expVariants").innerHTML = Object.entries(VARIANTS).map(([k,v])=>
+      `<label class="vchip"><input type="checkbox" value="${k}" checked>${esc(v.label)}</label>`).join("");
+    $("#expVariants").onchange = updateCost;
+    $("#expSlugs").oninput = updateCost;
+    updateCost();
+  }
+  renderRuns(d.runs);
+}
+function updateCost(){
+  const slugs = $("#expSlugs").value.split("\n").map(s=>s.trim()).filter(Boolean).length;
+  const vs = [...$("#expVariants").querySelectorAll("input:checked")].length;
+  $("#expCost").textContent = slugs && vs ? `${slugs*vs} Jev calls` : "";
+}
+$("#expRun").onclick = async e => {
+  const slugs = $("#expSlugs").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  const variants = [...$("#expVariants").querySelectorAll("input:checked")].map(i=>i.value);
+  if (!slugs.length) return void($("#expMsg").innerHTML = `<span style="color:var(--bad)">Add at least one slug.</span>`);
+  if (!variants.length) return void($("#expMsg").innerHTML = `<span style="color:var(--bad)">Pick at least one variant.</span>`);
+  e.target.disabled = true; e.target.textContent = "Running…";
+  $("#expMsg").textContent = `Asking Jev ${slugs.length*variants.length} times. News lookups are slow.`;
+  try {
+    const d = await fetch("/api/engine/experiment",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({slugs,variants})}).then(r=>r.json());
+    if (d.error) throw new Error(d.error);
+    $("#expMsg").textContent = "";
+    await loadExperiments();
+  } catch(err){ $("#expMsg").innerHTML = `<span style="color:var(--bad)">${esc(String(err.message??err))}</span>`; }
+  finally { e.target.disabled = false; e.target.textContent = "Run"; }
+};
+
+function renderRuns(runs){
+  if (!runs?.length) return void($("#expOut").innerHTML =
+    `<div class="empty">No experiments yet.<br><span style="font-size:11.5px">
+     Paste a slug above and press Run. Four variants on one market is four Jev calls.</span></div>`);
+  $("#expInfo").textContent = `${runs.length} run${runs.length===1?"":"s"}`;
+  $("#expOut").innerHTML = runs.map(run=>{
+    const best = run.summary?.length
+      ? run.summary.reduce((a,b)=>(b.evidence??0)>(a.evidence??0)?b:a) : null;
+    const sum = run.summary?.length ? `
+      <div class="exp"><h3>Across ${run.markets.length} market${run.markets.length===1?"":"s"}</h3>
+      <div class="meta">${ago(run.created_at)} · higher evidence is better, smaller gap is better</div>
+      ${run.summary.map(s=>`
+        <div class="vrow"><span class="lab ${s===best?"best":""}">${esc(s.label)}</span>
+          <span class="tok">${Math.round(s.tokens)} tok</span>
+          <div class="track"><i style="width:${(s.evidence*100).toFixed(0)}%;background:${
+            s===best?"var(--ok)":"var(--acc)"}"></i></div>
+          <span class="val">${pc(s.evidence,0)} · ${(s.absGap*100).toFixed(1)}pt</span></div>`).join("")}
+      ${best ? `<div class="hint">Best evidence: <b style="color:var(--ink)">${esc(best.label)}</b>
+        at ${pc(best.evidence,0)}. If that is not the richest variant, the extra context was noise.</div>` : ""}
+      </div>` : "";
+    const mkts = run.markets.map(m=>{
+      if (m.error) return `<div class="exp"><h3>${esc(m.slug)}</h3>
+        <div class="meta" style="color:var(--bad)">${esc(m.error)}</div></div>`;
+      return `<div class="exp"><h3>${esc(m.title)}</h3>
+        <div class="meta">${esc(m.market)} · crowd ${pc(m.crowd,0)} ·
+          ${m.notesKept} notes kept of ${m.commentTotal} ·
+          ${m.newsCount} news${m.newsDropped?` (${m.newsDropped} dropped as irrelevant)`:""}</div>
+        ${m.runs.map(r=> r.error
+          ? `<div class="vrow"><span class="lab">${esc(r.label)}</span>
+             <span class="tok"></span><span style="color:var(--bad);font-size:11.5px">${esc(r.error)}</span><span></span></div>`
+          : `<div class="vrow"><span class="lab">${esc(r.label)}</span>
+             <span class="tok">${r.tokens ?? "?"} tok</span>
+             <div class="track"><i style="width:${(r.evidence*100).toFixed(0)}%"></i></div>
+             <span class="val">${pc(r.evidence,0)} · ${(r.gap*100>=0?"+":"")}${(r.gap*100).toFixed(1)}pt</span>
+             </div>`).join("")}</div>`;
+    }).join("");
+    return sum + mkts;
+  }).join("");
+}
+
+if (PANELS.includes(location.hash.slice(1))) showTab(location.hash.slice(1));

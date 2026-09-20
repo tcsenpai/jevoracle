@@ -92,6 +92,24 @@ answer is a guess.
 
 **Consistency check.** Sends the primary question three times and charts the spread.
 
+## Comparing it against a prediction market
+
+There is a script that pulls a Polymarket event through their free read-only API,
+builds a Jev request from the resolution rules and the comment thread, and prints
+Jev's judgment next to the crowd price.
+
+```bash
+bun run scripts/ask-polymarket.js nato-x-russia-military-clash-in-2025
+```
+
+The market price is deliberately left out of the state, so Jev is judging the
+written evidence rather than reading the answer off the board. On a $7M geopolitics
+market it landed within 2.5 points of the crowd. On an F1 championship market it was
+off by 80 points and said so itself, because the rules it was given say nothing about
+who is currently winning.
+
+Details and caveats are in [docs/polymarket-experiment.md](docs/polymarket-experiment.md).
+
 ## Project layout
 
 ```
@@ -102,6 +120,7 @@ public/
   app.js           Question builder, JSON sync, answer rendering
   jev3d.js         The droid. Three.js, procedural geometry, no model files.
   favicon.svg
+scripts/           Polymarket importer and the comparison CLI
 design-system/     Design language and UX notes written while building this
 ```
 

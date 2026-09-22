@@ -1,12 +1,12 @@
-/* Metriche di un bot.
+/* A bot's metrics.
  *
- * Il problema che queste funzioni risolvono: il P&L su poche predizioni e'
- * rumore, e i mercati ci mettono settimane a risolversi. Servono numeri
- * leggibili PRIMA che i risultati arrivino, senza spacciarli per prove.
+ * The problem these functions solve: P&L on a handful of predictions is
+ * noise, and markets take weeks to resolve. We need readable numbers BEFORE
+ * the results come in, without passing them off as proof.
  *
- * Regola che attraversa tutto il file: se un numero non e' ancora calcolabile
- * si restituisce null, non zero. Uno zero finto in dashboard e' peggio di un
- * "non lo so".
+ * Rule that runs through the whole file: if a number is not yet computable,
+ * return null, not zero. A fake zero on the dashboard is worse than an
+ * honest "I don't know".
  */
 import { brier, calibration, kelly, pnl } from "../engine/scoring.js";
 export { brier, calibration, kelly, pnl };
@@ -14,11 +14,11 @@ export { brier, calibration, kelly, pnl };
 const mean = (xs) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
 
 /**
- * Quanto spesso il bot si e' astenuto, e se lo ha fatto quando era poco informato.
+ * How often the bot abstained, and whether it did so when poorly informed.
  *
- * `rule` decide quale delle due regole si sta misurando. Contare come "ha puntato"
- * qualsiasi riga con gated OR ungated rende l'astensione del gate invisibile, che
- * e' esattamente la cosa che vogliamo misurare.
+ * `rule` decides which of the two rules is being measured. Counting any row
+ * with gated OR ungated as "bet" would make the gate's abstention invisible,
+ * which is exactly the thing we want to measure.
  */
 export function abstention(rows, rule = "gated") {
   if (!rows.length) return null;
@@ -31,20 +31,20 @@ export function abstention(rows, rule = "gated") {
     bet: bet.length,
     passed: passed.length,
     rate: passed.length / rows.length,
-    // il punto: quando si e' astenuto, era davvero meno informato?
+    // the point: when it abstained, was it really less informed?
     evidenceWhenBet: mean(bet.map(r => r.evidence).filter(x => x != null)),
     evidenceWhenPassed: mean(passed.map(r => r.evidence).filter(x => x != null)),
   };
 }
 
 /**
- * Il segnale indipendente che lo Skeptic ha chiesto: l'evidence auto-dichiarata
- * predice davvero l'errore?
+ * The independent signal the Skeptic asked for: does self-declared evidence
+ * actually predict the error?
  *
- * Confronta l'errore assoluto (|jev - esito|) sulle predizioni ad alta evidence
- * contro quelle a bassa evidence. Se la differenza e' circa zero, evidence e'
- * rumore e non va usata come gate. Richiede predizioni SETTLED: prima di quelle
- * restituisce null, perche' non c'e' niente contro cui misurare.
+ * Compares absolute error (|jev - outcome|) on high-evidence predictions
+ * against low-evidence ones. If the difference is roughly zero, evidence is
+ * noise and should not be used as a gate. Requires SETTLED predictions:
+ * before that it returns null, because there is nothing to measure against.
  */
 export function evidenceValidity(rows, split = 0.5) {
   const settled = rows.filter(r => r.outcome === 0 || r.outcome === 1);
@@ -54,19 +54,19 @@ export function evidenceValidity(rows, split = 0.5) {
   const err = r => Math.abs(r.jev - r.outcome);
   const hi = withEv.filter(r => r.evidence >= split);
   const lo = withEv.filter(r => r.evidence < split);
-  if (!hi.length || !lo.length) return { usable: false, n: withEv.length, reason: "tutte le righe da un lato della soglia" };
+  if (!hi.length || !lo.length) return { usable: false, n: withEv.length, reason: "all rows on one side of the split" };
 
   const errHi = mean(hi.map(err)), errLo = mean(lo.map(err));
   return {
     usable: true, n: withEv.length, split,
     hi: { n: hi.length, meanError: errHi },
     lo: { n: lo.length, meanError: errLo },
-    // positivo = l'evidence alta sbaglia meno, cioe' il segnale vale qualcosa
+    // positive = high evidence errs less, i.e. the signal is worth something
     separation: errLo - errHi,
   };
 }
 
-/** Jev contro la folla sugli stessi mercati. L'unica domanda che conta davvero. */
+/** Jev against the crowd on the same markets. The only question that really matters. */
 export function versusCrowd(rows) {
   const settled = rows.filter(r => r.outcome === 0 || r.outcome === 1);
   if (!settled.length) return null;
@@ -74,17 +74,40 @@ export function versusCrowd(rows) {
   const bCrowd = brier(settled.map(r => ({ p: r.crowd, outcome: r.outcome })));
   return {
     n: settled.length, brierJev: bJev, brierCrowd: bCrowd,
-    // negativo = Jev batte la folla
+    // negative = Jev beats the crowd
     delta: bJev - bCrowd,
     beats: bJev < bCrowd,
   };
 }
 
 /**
- * Riepilogo di un bot, diviso in due blocchi espliciti:
- *   leading  = leggibile subito, NON e' evidenza di performance
- *   settled  = richiede mercati risolti, e' l'unica cosa che prova qualcosa
+ * A bot's summary, split into two explicit blocks:
+ *   leading  = readable right away, NOT evidence of performance
+ *   settled  = requires resolved markets, is the only thing that proves anything
  */
+/**
+ * Status of still-open bets: how much is committed and when it will be known.
+ * `nextClose` is the nearest upcoming deadline; `dueNow` counts the ones
+ * already past due, which should close at the next outcome check.
+ */
+function openPositions(open) {
+  // Only the prudent rule actually commits the bankroll. `stake_ungated` is
+  // the simulation of the other rule, recorded so the two can be compared:
+  // adding it in would make bets the bot never placed look like "money in play".
+  const bet = open.filter(r => r.gated);
+  const staked = bet.reduce((a, r) => a + (r.stake_gated ?? 0), 0);
+  const dates = bet.map(r => r.end_date).filter(Boolean).sort();
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    stakedOpen: bet.length ? staked : 0,
+    openBets: bet.length,
+    nextClose: dates[0] ?? null,
+    dueNow: dates.filter(d => d.slice(0, 10) <= today).length,
+    // how many the free rule would have opened: for comparison purposes only
+    wouldHaveBet: open.filter(r => r.ungated && !r.gated).length,
+  };
+}
+
 export function botSummary(rows) {
   const settled = rows.filter(r => r.outcome === 0 || r.outcome === 1);
   const sum = f => rows.reduce((a, r) => a + (f(r) ?? 0), 0);
@@ -98,6 +121,10 @@ export function botSummary(rows) {
       abstention: abstention(rows, "gated"),
       abstentionUngated: abstention(rows, "ungated"),
       models: [...new Set(rows.map(r => r.model).filter(Boolean))],
+      // Virtual money committed and when it frees up. Without these two
+      // numbers the P&L stays invisible until something closes, and the user
+      // does not even know how long they have to wait.
+      ...openPositions(rows.filter(r => r.outcome !== 0 && r.outcome !== 1)),
     },
     settled: {
       n: settled.length,
@@ -107,10 +134,10 @@ export function botSummary(rows) {
       pnlGated: settled.length ? sum(r => r.pnl_gated) : null,
       pnlUngated: settled.length ? sum(r => r.pnl_ungated) : null,
     },
-    // quanto sono affidabili i numeri sopra, detto esplicitamente
-    maturity: settled.length === 0 ? "nessun mercato risolto, solo indicatori anticipati"
-            : settled.length < 20 ? "troppo pochi risultati per concludere qualcosa"
-            : settled.length < 50 ? "indicativo, non conclusivo"
-            : "sufficiente per una prima lettura",
+    // how reliable the numbers above are, stated explicitly
+    maturity: settled.length === 0 ? "no markets resolved yet, leading indicators only"
+            : settled.length < 20 ? "too few results to conclude anything"
+            : settled.length < 50 ? "indicative, not conclusive"
+            : "enough for a first reading",
   };
 }

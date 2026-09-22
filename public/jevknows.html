@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JevKnows</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/jevknows.css">
+</head><body>
+
+<header>
+  <h1>Jev<b>Knows</b></h1>
+  <span class="muted">a control room to see whether the bots know what they claim to know</span>
+  <span class="spacer"></span>
+  <a class="navlink" href="/engine.html">Console</a>
+</header>
+
+<div class="wrap">
+  <div id="live" class="banner" aria-live="polite"></div>
+
+  <div class="listhead">
+    <div>
+      <h1>Your bots</h1>
+      <p class="lede">Every bot answers the same questions on Polymarket with its own virtual
+        bankroll and its own settings. The most important thing is not whether it won,
+        it's whether it knows when it doesn't know.</p>
+    </div>
+    <span class="spacer"></span>
+    <a class="navlink" href="/wizard.html">Walk me through it</a>
+    <button class="primary" id="newBot">New bot</button>
+  </div>
+
+  <section class="card">
+    <h2><span class="dot"></span>All bots <span class="spacer"></span>
+      <span class="muted" id="listinfo"></span></h2>
+    <div id="listErr" aria-live="polite"></div>
+    <div id="botlist" class="botlist" aria-live="polite">
+      <div class="empty">Loading…</div>
+    </div>
+  </section>
+</div>
+
+<dialog id="newBotDialog" style="background:var(--panel);color:var(--ink);border:1px solid var(--line-strong);
+  border-radius:var(--r);padding:var(--s3);max-width:420px;width:92vw">
+  <form method="dialog" id="newBotForm" style="display:flex;flex-direction:column;gap:var(--s2)">
+    <h2 style="margin:0;font-size:15px">New bot</h2>
+    <p class="hint" style="margin:0">All you need is a name. Bankroll and settings start with
+      values already set, you can change them later from the bot's detail page.</p>
+    <label for="nbName">Name</label>
+    <input type="text" id="nbName" required placeholder="e.g. geopolitics">
+    <details class="advanced">
+      <summary>Advanced settings <small>optional</small></summary>
+      <div class="adv-body">
+        <div class="field">
+          <label for="nbBlurb">Short description</label>
+          <input type="text" id="nbBlurb" placeholder="e.g. geopolitical markets only">
+        </div>
+        <div class="field">
+          <label for="nbBankroll">Starting virtual bankroll</label>
+          <input type="text" inputmode="decimal" id="nbBankroll" value="1000">
+          <span class="help">Fake money. It's only used to size simulated bets.</span>
+        </div>
+      </div>
+    </details>
+    <div class="row" style="justify-content:flex-end;margin-top:var(--s1)">
+      <button type="button" class="ghost" id="nbCancel">Cancel</button>
+      <button type="submit" class="primary" id="nbSubmit">Create bot</button>
+    </div>
+    <div id="nbMsg" class="hint" aria-live="polite"></div>
+  </form>
+</dialog>
+
+<script type="module" src="/jevknows.js"></script>
+</body></html>

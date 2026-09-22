@@ -14,8 +14,9 @@
 
 <header>
   <h1>Jev <b>Oracle</b></h1>
-  <span class="muted" id="tagline">typed questions over your state — not a chat</span>
+  <span class="muted" id="tagline">typed questions over your state, not a chat</span>
   <span class="spacer"></span>
+  <a class="navlink" href="/jevknows.html" style="color:var(--dim);text-decoration:none;font-size:13px;padding:9px 12px;border-radius:7px">JevKnows</a>
   <a class="navlink" href="/engine.html" style="color:var(--dim);text-decoration:none;font-size:13px;padding:9px 12px;border-radius:7px">Engine</a>
   <button class="ghost sm" id="help">What is this?</button>
   <button class="ghost" id="again" title="Send the same request again" aria-label="Send again">↻</button>
@@ -27,7 +28,7 @@
   <h2>Jev answers in types, not sentences.</h2>
   <p>You send a <b>state</b> (whatever it should reason over) and a map of typed
      <b>questions</b>. It returns one typed answer per question, with calibrated
-     probabilities — all in a single parallel call. The exact JSON is always visible
+     probabilities, all in a single parallel call. The exact JSON is always visible
      on the right, and you can edit it directly.</p>
   <div class="prim">
     <button data-add="noul"><b>+ Noul</b><span>Is this true? Returns the probability of yes. Use one per label when several could apply.</span></button>
@@ -41,7 +42,7 @@
 </section>
 
 <main id="console" hidden>
-  <!-- COLUMN 1 — state + questions -->
+  <!-- COLUMN 1, state + questions -->
   <div class="col col-in">
     <div class="card">
       <h2><span class="dot"></span>State <span class="spacer"></span>
@@ -64,7 +65,7 @@
     </div>
   </div>
 
-  <!-- COLUMN 2 — the wire format -->
+  <!-- COLUMN 2, the wire format -->
   <div class="col col-wire">
     <div class="card wire">
       <h2><span class="dot"></span>Request <span class="spacer"></span>
@@ -83,7 +84,7 @@
         <button class="ghost sm" id="revertJson">Revert</button>
       </div>
       <div class="hint" id="wireHint">This is the exact body POSTed to
-        <code>/v1/systemone</code>. It is built from the controls on the left — and editing it
+        <code>/v1/systemone</code>. It is built from the controls on the left, and editing it
         here updates them.</div>
     </div>
 
@@ -105,12 +106,12 @@
         <b class="mono" id="gateV">0.70</b>
       </div>
       <div class="hint">Confidence below this is tagged <span class="tag hold">hold</span>
-        instead of <span class="tag act">act</span>. Noul has no confidence — it is judged by
+        instead of <span class="tag act">act</span>. Noul has no confidence, it is judged by
         distance from 0.50.</div>
     </div>
   </div>
 
-  <!-- COLUMN 3 — answers -->
+  <!-- COLUMN 3, answers -->
   <div class="col col-out">
     <div class="card projector">
       <canvas id="jev3d" aria-hidden="true"></canvas>

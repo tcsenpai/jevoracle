@@ -1,4 +1,4 @@
-/* Jev — a projected hologram droid that reacts to verdicts.
+/* Jev, a projected hologram droid that reacts to verdicts.
    Procedural geometry only (no model files), wireframe + additive glow. */
 export function mountJev(canvas){
   const T = window.THREE;
@@ -12,7 +12,7 @@ export function mountJev(canvas){
   const renderer = new T.WebGLRenderer({canvas, alpha:true, antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 
-  const CY=0x4FD8E8, OK=0x4ADE80, WARN=0xFBBF24, BAD=0xFF7A85;
+  const CY=0xF0B90B, OK=0x3FD98A, WARN=0xFFA726, BAD=0xFF6B6B;
   const rig = new T.Group(); scene.add(rig);
   const body = new T.Group(); rig.add(body);
 
@@ -52,7 +52,7 @@ export function mountJev(canvas){
     scene.add(ring); rings.push(ring);
   });
 
-  /* orbiting judgment particles — one per question in flight */
+  /* orbiting judgment particles, one per question in flight */
   const P=90, pos=new Float32Array(P*3), seed=[];
   for(let i=0;i<P;i++){
     seed.push({r:1.3+Math.random()*1.5, a:Math.random()*Math.PI*2,

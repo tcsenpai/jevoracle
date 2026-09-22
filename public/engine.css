@@ -55,7 +55,7 @@ td.mkt small{display:block;color:var(--dim);font-size:11px}
   border-radius:9px;padding:3px;width:fit-content}
 .wrap>.tabs button{border:none;background:none;color:var(--dim);border-radius:6px;
   padding:9px 18px;font-size:13px;min-height:42px}
-.wrap>.tabs button[aria-selected=true]{background:var(--acc);color:#03151A;font-weight:700}
+.wrap>.tabs button[aria-selected=true]{background:var(--acc);color:var(--on-acc);font-weight:700}
 .panel{display:flex;flex-direction:column;gap:var(--s3)}
 
 /* ---------- context tab ---------- */

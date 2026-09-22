@@ -1,0 +1,320 @@
+/* JevKnows platform pages. Extends app.css — reuses tokens, adds only what's missing.
+ *
+ * Plain-language pass (founder correction, 2026-09-20): numbers are never the
+ * whole story on screen. A short sentence in var(--ink) sits next to or under
+ * every measure; the raw number is demoted to a smaller, dimmer companion.
+ */
+
+.wrap{max-width:1500px;margin:0 auto;padding:var(--s3);position:relative;z-index:1;
+  display:flex;flex-direction:column;gap:var(--s3)}
+.navlink{color:var(--dim);text-decoration:none;font-size:13px;padding:9px 12px;
+  border:1px solid transparent;border-radius:7px;min-height:44px;display:flex;align-items:center}
+.navlink:hover{color:var(--ink);border-color:var(--line-strong)}
+
+.banner{border:1px solid var(--line-strong);border-radius:var(--r);padding:11px var(--s2);
+  font-size:12.5px;color:var(--dim);background:var(--panel)}
+.banner.safe{border-color:rgba(74,222,128,.4)}
+.banner.err{border-color:var(--bad);color:var(--bad)}
+.banner b{color:var(--ink)}
+
+/* ---------- jargon gloss: technical term never stands alone ---------- */
+.gloss{white-space:nowrap}
+.glosstip{color:var(--dim);font-weight:400;font-size:.92em}
+
+/* ---------- plain-language phrase blocks ---------- */
+.phrase{font-size:13px;color:var(--ink);line-height:1.5}
+.phrase.good{color:var(--ok)}
+.phrase.warn{color:var(--warn)}
+.phrase .num{color:var(--dim);font-size:11px;font-family:ui-monospace,Menlo,monospace;
+  margin-left:6px}
+
+/* ---------- bot list ---------- */
+.listhead{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.listhead h1{font-size:20px;margin:0;font-weight:600;letter-spacing:-.3px}
+.listhead p.lede{color:var(--dim);font-size:12.5px;margin:2px 0 0;max-width:60ch}
+
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);
+  font-weight:600;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 9px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.botrow:hover td{background:rgba(240,185,11,.035)}
+.r{text-align:right}
+.empty{color:var(--dim);padding:var(--s4);text-align:center}
+.empty-teach{padding:var(--s4) var(--s3);text-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:var(--s2)}
+.empty-teach p{margin:0;color:var(--dim);font-size:13px;max-width:46ch;line-height:1.6}
+.empty-teach p b{color:var(--ink)}
+
+td.botname{white-space:normal;min-width:180px}
+td.botname a{color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}
+td.botname a:hover{color:var(--acc)}
+td.botname small{display:block;color:var(--dim);font-size:11px;font-weight:400;margin-top:2px}
+td.botstate{white-space:normal;min-width:220px}
+
+.status{font-size:9.5px;padding:3px 8px;border-radius:99px;font-weight:700;letter-spacing:.3px;
+  border:1px solid;white-space:nowrap;text-transform:uppercase}
+.status.active{color:var(--ok);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.12)}
+.status.paused{color:var(--warn);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12)}
+.status.archived{color:var(--dim);border-color:var(--line)}
+
+/* maturity: how much to trust the numbers. never a verdict, always a measure.
+ * Shown as its own sentence, not a badge abbreviation — this is the primary text. */
+.maturity{font-size:9.5px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);
+  color:var(--dim);white-space:normal;display:inline-block;max-width:100%}
+.maturity.n0{color:var(--dim)}
+.maturity.n1{color:var(--warn);border-color:rgba(251,191,36,.35)}
+.maturity.n2{color:var(--acc);border-color:rgba(240,185,11,.35)}
+.maturity.n3{color:var(--ok);border-color:rgba(74,222,128,.35)}
+
+.na{color:var(--dim);font-style:italic;font-size:.95em}
+.rowactions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
+
+/* ---------- bot detail ---------- */
+.dethead{display:flex;align-items:flex-start;gap:var(--s3);flex-wrap:wrap;justify-content:space-between}
+.dethead h1{font-size:22px;margin:0 0 4px;font-weight:600;letter-spacing:-.3px}
+.dethead .sub{color:var(--dim);font-size:12.5px}
+.dethead .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s2)}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:var(--s2)}
+.kpi span.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);
+  display:block;margin-bottom:6px}
+.kpi .headline{font-size:14px;color:var(--ink);line-height:1.45;font-weight:500}
+.kpi .headline.good{color:var(--ok)}
+.kpi .headline.warn{color:var(--warn)}
+.kpi .headline .raw{display:block;margin-top:5px;color:var(--dim);font-size:11px;
+  font-family:ui-monospace,Menlo,monospace;font-weight:400}
+
+/* section split: leading vs settled must never look interchangeable */
+.split-head{display:flex;align-items:center;gap:9px;margin-bottom:2px;flex-wrap:wrap}
+.split-head .tag{font-size:9.5px;padding:3px 9px;border-radius:99px;font-weight:700;
+  letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
+.split-head .tag.leading{background:rgba(124,156,255,.15);color:var(--acc2);border:1px solid rgba(124,156,255,.35)}
+.split-head .tag.settled{background:rgba(74,222,128,.12);color:var(--ok);border:1px solid rgba(74,222,128,.35)}
+.split-head h2{margin:0;font-size:13px;font-weight:600}
+.split-note{color:var(--dim);font-size:12.5px;margin:2px 0 var(--s2);line-height:1.55}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+/* min-width:0 on direct children: without it, a wide table inside .card
+ * pushes the grid column past the viewport (horizontal scroll down to
+ * 380px), even though .tablewrap already has its own overflow-x:auto */
+.two>*{min-width:0}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+
+.crow{display:grid;grid-template-columns:62px 1fr 1fr 44px;gap:9px;align-items:center;
+  margin-bottom:7px;font-size:12px}
+.crow .lab{color:var(--dim);font-family:ui-monospace,Menlo,monospace;font-size:11px}
+.crow .track{height:9px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;
+  border:1px solid var(--line)}
+.crow .track i{display:block;height:100%;border-radius:99px}
+.crow .n{text-align:right;color:var(--dim);font-size:11px;font-family:ui-monospace,Menlo,monospace}
+.legend{display:flex;gap:var(--s2);font-size:11px;color:var(--dim);margin-top:var(--s1);flex-wrap:wrap}
+.legend s{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;
+  vertical-align:-1px;text-decoration:none}
+
+.badge{font-size:9.5px;padding:2px 6px;border-radius:99px;font-weight:700;letter-spacing:.3px;
+  border:1px solid}
+.badge.g{color:var(--ok);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.12)}
+.badge.u{color:var(--warn);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12)}
+.badge.n{color:var(--dim);border-color:var(--line)}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+
+td.mkt{white-space:normal;min-width:190px;max-width:290px}
+td.mkt small{display:block;color:var(--dim);font-size:11px}
+
+/* config history */
+.cfgv{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px;
+  background:var(--panel2)}
+.cfgv.current{border-color:var(--acc);box-shadow:0 0 0 1px rgba(240,185,11,.18)}
+.cfgv .head{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.cfgv .head b{font-family:ui-monospace,Menlo,monospace}
+.cfgv .head .now{font-size:9.5px;padding:2px 7px;border-radius:99px;background:rgba(240,185,11,.15);
+  color:var(--acc);border:1px solid rgba(240,185,11,.35);font-weight:700}
+.cfgv .meta{color:var(--dim);font-size:11.5px;margin-top:3px}
+.cfgv .note{color:var(--ink);font-size:12px;margin-top:5px}
+
+/* ---------- form (bot-config) ---------- */
+.form-card{display:flex;flex-direction:column;gap:var(--s3)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field .help{color:var(--dim);font-size:11.5px;line-height:1.5;margin-top:-2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.checklist{display:flex;flex-direction:column;gap:2px}
+.checkrow{display:flex;gap:11px;align-items:flex-start;padding:9px 0;
+  border-bottom:1px solid var(--line);min-height:44px}
+.checkrow:last-child{border-bottom:none}
+.checkrow input{margin-top:3px}
+.checkrow b{font-size:13px;font-weight:600;display:block}
+.checkrow small{color:var(--dim);font-size:11.5px;line-height:1.5;display:block;margin-top:2px}
+.versionote{border:1px dashed var(--line-strong);border-radius:var(--r);padding:11px var(--s2);
+  color:var(--dim);font-size:12.5px}
+.versionote b{color:var(--ink);font-weight:600}
+fieldset{border:1px solid var(--line);border-radius:var(--r);padding:var(--s2);margin:0}
+fieldset legend{padding:0 8px;font-size:11px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--dim)}
+.subrow{display:flex;gap:var(--s2);flex-wrap:wrap}
+.subrow .field{flex:1;min-width:160px}
+
+/* threshold row: number + what raising/lowering it does */
+.threshold{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-bottom:1px solid var(--line)}
+.threshold:last-child{border-bottom:none}
+.threshold .th-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.threshold label{margin:0;flex:0 0 auto}
+.threshold input{width:110px;flex:0 0 auto}
+.threshold .effect{color:var(--dim);font-size:11.5px;line-height:1.55}
+.threshold .effect b{color:var(--ink);font-weight:600}
+
+/* collapsible "advanced" sections */
+details.advanced{border:1px solid var(--line);border-radius:var(--r);background:var(--panel2)}
+details.advanced>summary{cursor:pointer;padding:12px var(--s2);font-size:13px;font-weight:600;
+  color:var(--ink);list-style:none;display:flex;align-items:center;gap:8px;min-height:44px}
+details.advanced>summary::-webkit-details-marker{display:none}
+details.advanced>summary::before{content:"▸";color:var(--acc);font-size:11px;transition:transform .15s}
+details.advanced[open]>summary::before{transform:rotate(90deg)}
+details.advanced>summary small{color:var(--dim);font-weight:400;font-size:11.5px}
+details.advanced>.adv-body{padding:0 var(--s2) var(--s2);display:flex;flex-direction:column;gap:var(--s3)}
+
+@media(max-width:520px){
+  .dethead{flex-direction:column;align-items:stretch}
+  .kpis{grid-template-columns:1fr}
+  .threshold input{width:90px}
+}
+
+/* ---------- schede bot: una per bot, non una riga di tabella ----------
+   Chi apre questa pagina deve capire "sta facendo qualcosa di sensato?"
+   senza sapere cosa sia un Brier score. */
+.botlist{display:flex;flex-direction:column;gap:var(--s3)}
+.botcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:var(--s3)}
+.botcard header{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;
+  margin-bottom:6px}
+.botcard h3{margin:0;font-size:17px;font-weight:600}
+.botcard h3 a{color:var(--ink);text-decoration:none}
+.botcard h3 a:hover{color:var(--acc)}
+.botcard .blurb{margin:0 0 var(--s2);color:var(--dim);font-size:13px}
+.botcard .facts{display:flex;flex-direction:column;gap:5px;margin-bottom:var(--s2);
+  padding-left:11px;border-left:2px solid var(--line)}
+.botcard .line{margin:0;font-size:13.5px;line-height:1.5}
+.botcard .line.good{color:var(--ok)}
+.botcard .line.warn{color:var(--warn)}
+/* il numero resta visibile ma in secondo piano rispetto alla frase */
+.botcard .fig{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--dim);
+  border:1px solid var(--line);border-radius:5px;padding:1px 6px;margin-left:5px}
+.botcard .maturity-line{margin:0 0 var(--s2)}
+.botcard footer{display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap;
+  padding-top:var(--s2);border-top:1px solid var(--line)}
+
+/* stato vuoto che insegna invece di constatare */
+.empty.teach{text-align:left;max-width:56ch;margin:0 auto;padding:var(--s4) var(--s3)}
+.empty.teach h3{margin:0 0 var(--s2);font-size:17px;color:var(--ink);font-weight:600}
+.empty.teach p{margin:0 0 var(--s2);color:var(--dim);font-size:13.5px;line-height:1.6}
+.cta{display:inline-flex;align-items:center;min-height:44px;padding:11px 18px;
+  background:linear-gradient(180deg,#F0B90B,#C99608);color:var(--on-acc);font-weight:700;
+  border-radius:8px;text-decoration:none;box-shadow:0 0 18px rgba(240,185,11,.3)}
+.cta:hover{filter:brightness(1.08)}
+
+@media(max-width:480px){
+  .botcard footer{flex-direction:column;align-items:stretch}
+  .botcard footer .spacer{display:none}
+  .botcard footer>*{width:100%;justify-content:center;text-align:center}
+}
+
+/* ---------- wizard: tutorial guidato per il primo bot ---------- */
+.wizard-wrap{max-width:640px}
+
+.wizsteps{margin-bottom:var(--s3)}
+.wizsteps ol{list-style:none;display:flex;gap:var(--s1);padding:0;margin:0}
+.wizsteps li{flex:1;display:flex;align-items:center;gap:7px;padding:8px 6px;
+  border-bottom:3px solid var(--line);color:var(--dim);font-size:12px}
+.wizsteps li .num{width:22px;height:22px;flex:0 0 auto;border-radius:50%;
+  border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:11px}
+.wizsteps li .lbl{display:none}
+.wizsteps li.current{border-bottom-color:var(--acc);color:var(--ink)}
+.wizsteps li.current .num{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+.wizsteps li.done{border-bottom-color:var(--ok);color:var(--ink)}
+.wizsteps li.done .num{background:var(--ok);color:var(--on-acc);border-color:var(--ok)}
+/* the spoken text is what actually announces the step to screen reader
+   users: the colored dots are just a visual reinforcement */
+.wizsteps-status{margin:var(--s1) 0 0;font-size:13px;color:var(--ink);font-weight:600}
+@media(min-width:560px){
+  .wizsteps li .lbl{display:inline}
+}
+
+.wizcard{padding:var(--s4) var(--s3)}
+.wizpanel h2{margin:0 0 var(--s2);font-size:19px;font-weight:600;letter-spacing:-.2px}
+.wizpanel h2:focus{outline:none}
+.wizpanel p{line-height:1.6;color:var(--ink)}
+.wizlist{margin:0 0 var(--s3);padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+.wizlist li{line-height:1.6}
+
+.wiznote{border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);
+  padding:var(--s2) var(--s3);margin-bottom:var(--s2);line-height:1.6;font-size:14px}
+.wiznote b{color:var(--acc)}
+
+.wizactions{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s3);flex-wrap:wrap}
+
+.wizpresets{display:flex;flex-direction:column;gap:var(--s2);margin:var(--s2) 0}
+.wizpreset{display:flex;gap:var(--s2);align-items:flex-start;border:1px solid var(--line-strong);
+  border-radius:var(--r);padding:var(--s2) var(--s3);cursor:pointer;min-height:44px}
+.wizpreset:has(input:checked){border-color:var(--acc);box-shadow:0 0 0 1px rgba(240,185,11,.18);
+  background:var(--panel2)}
+.wizpreset input{margin-top:5px;flex:0 0 auto}
+.wizpreset-body p{margin:4px 0 0;font-size:13.5px}
+.wizpreset-head{display:flex;align-items:center;gap:8px;font-size:14.5px}
+.wizpreset-effect{color:var(--dim);font-style:italic}
+
+.wiznextlist{margin:0 0 var(--s3);padding-left:1.4em;display:flex;flex-direction:column;gap:10px}
+.wiznextlist li{line-height:1.6}
+
+@media(max-width:480px){
+  .wizactions{flex-direction:column;align-items:stretch}
+  .wizactions .spacer{display:none}
+  .wizactions>*{width:100%;justify-content:center;text-align:center}
+}
+
+/* the money line is the first thing people look for: bigger than the rest */
+.botcard .line.money{font-size:1.05em;font-weight:600;color:var(--ink)}
+.botcard .line.money.good{color:var(--ok)}
+.botcard .line.money.warn{color:var(--warn)}
+
+/* ---------- decision engine ---------- */
+
+/* bot card: a single line, discreet style like the other info lines */
+.botcard .engine-line{font-size:12.5px;margin:2px 0 var(--s2)}
+
+/* bot-config: engine choice, radios as whole clickable rows, same visual
+ * language as .wizpreset (border lights up when selected) so the page does
+ * not introduce a second style of choice */
+.enginechoice{display:flex;flex-direction:column;gap:var(--s2);margin:var(--s2) 0}
+.engrow{display:flex;gap:var(--s2);align-items:flex-start;border:1px solid var(--line-strong);
+  border-radius:var(--r);padding:var(--s2) var(--s3);cursor:pointer;min-height:44px}
+.engrow:has(input:checked){border-color:var(--acc);box-shadow:0 0 0 1px rgba(240,185,11,.18);
+  background:var(--panel2)}
+.engrow input{margin-top:5px;flex:0 0 auto;width:18px;height:18px}
+.engrow b{font-size:14.5px;display:block}
+.engrow small{color:var(--dim);font-size:12.5px;line-height:1.55;display:block;margin-top:3px}
+.engrow:focus-within{outline:2px solid var(--acc);outline-offset:2px}
+
+#quorumWeights .field label{font-size:12.5px}
+#quorumWeights input{width:90px}
+
+.enginewarn{border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);
+  padding:var(--s2) var(--s3);margin-top:var(--s2)!important;color:var(--dim)}
+
+/* bot.html: "who decided" column, short name plus the three votes side by side */
+td.decided{min-width:140px}
+.modelname{font-weight:600;font-size:12.5px}
+.evrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.evchip{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--dim);
+  border:1px solid var(--line);border-radius:5px;padding:1px 5px;white-space:nowrap}
+.evchip.win{color:var(--on-acc);background:var(--acc);border-color:var(--acc);font-weight:700}
+.evchip.miss{opacity:.55}
+.evdisagree{font-size:11px;color:var(--warn);margin-top:3px;font-weight:600}
+.evwarning{font-size:10.5px;color:var(--bad);margin-top:3px;line-height:1.4}
+
+@media(max-width:480px){
+  .engrow{padding:11px}
+}

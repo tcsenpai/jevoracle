@@ -1,13 +1,13 @@
-/* JevKnows — schema multi-bot.
+/* JevKnows — multi-bot schema.
  *
- * Deciso nel production meeting del 2026-09-20 (meetings/jevknows-2026-09-20/verbale.md).
- * Tre invarianti che NON si negoziano a runtime:
- *   1. bot_configs e' append-only. Un cambio di config e' una riga nuova, mai un UPDATE.
- *      Senza questo, cambiare una soglia riscrive retroattivamente il senso di tutto
- *      lo storico gia' registrato.
- *   2. predictions e' immutabile dopo l'insert, tranne il settlement (che e' un fatto
- *      esterno, non una revisione del giudizio).
- *   3. model contiene il versioned id dalla response, mai l'alias. jev-latest si muove.
+ * Decided in the production meeting of 2026-09-20 (meetings/jevknows-2026-09-20/verbale.md).
+ * Three invariants that are NOT negotiable at runtime:
+ *   1. bot_configs is append-only. A config change is a new row, never an UPDATE.
+ *      Without this, changing a threshold would retroactively rewrite the meaning of
+ *      all the history already recorded.
+ *   2. predictions is immutable after insert, except for settlement (which is an
+ *      external fact, not a revision of the judgment).
+ *   3. model holds the versioned id from the response, never the alias. jev-latest moves.
  */
 import { Database } from "bun:sqlite";
 
@@ -27,14 +27,14 @@ export function openDB(path = "data/jevknows.db") {
       created_at     TEXT NOT NULL
     );
 
-    -- APPEND ONLY. Nessun path in questo file emette UPDATE su questa tabella.
+    -- APPEND ONLY. No path in this file issues an UPDATE on this table.
     CREATE TABLE IF NOT EXISTS bot_configs (
       bot_id          INTEGER NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
       version         INTEGER NOT NULL,
-      context_json    TEXT NOT NULL,   -- quali campi di state, news, note
-      thresholds_json TEXT NOT NULL,   -- minEdge, minEvidence, kelly, universo mercati
+      context_json    TEXT NOT NULL,   -- which state fields, news, note
+      thresholds_json TEXT NOT NULL,   -- minEdge, minEvidence, kelly, market universe
       valid_from      TEXT NOT NULL,
-      valid_to        TEXT,            -- NULL = config corrente
+      valid_to        TEXT,            -- NULL = current config
       note            TEXT,
       PRIMARY KEY (bot_id, version)
     );
@@ -69,7 +69,7 @@ export function openDB(path = "data/jevknows.db") {
       token_id           TEXT,
       end_date           TEXT,
 
-      crowd              REAL NOT NULL,   -- prezzo congelato al momento della decisione
+      crowd              REAL NOT NULL,   -- price frozen at decision time
       jev                REAL NOT NULL,
       edge               REAL NOT NULL,
       evidence           REAL,
@@ -83,22 +83,30 @@ export function openDB(path = "data/jevknows.db") {
       stake_gated        REAL DEFAULT 0,
       stake_ungated      REAL DEFAULT 0,
 
-      -- il versioned id dalla response, MAI l'alias
+      -- the versioned id from the response, NEVER the alias
       model              TEXT NOT NULL,
-      state_snapshot     TEXT NOT NULL,   -- il JSON esatto mandato a Jev
+      state_snapshot     TEXT NOT NULL,   -- the exact JSON sent to Jev
       answers_json       TEXT NOT NULL,
       latency_ms         INTEGER,
       news_count         INTEGER DEFAULT 0,
 
-      -- una nuova valutazione non riscrive la vecchia, la supersede
+      -- a new evaluation does not overwrite the old one, it supersedes it
       supersedes_prediction_id INTEGER REFERENCES predictions(id),
       supersede_reason   TEXT,
 
-      -- il settlement e' un fatto esterno, non una revisione del giudizio
+      -- settlement is an external fact, not a revision of the judgment
       settled_at         TEXT,
       outcome            INTEGER,
       pnl_gated          REAL,
-      pnl_ungated        REAL
+      pnl_ungated        REAL,
+
+      -- populated only when engine.name = 'quorum'. 'model' alone is not
+      -- enough to reconstruct who answered what: engine_votes is the JSON
+      -- { engineName: { model, ms, answers } } of EVERY engine queried,
+      -- so months later it is still possible to read each one's vote,
+      -- not just the combined outcome. NULL for single-engine runs.
+      engine_votes        TEXT,
+      engine_warning       TEXT
     );
 
     CREATE INDEX IF NOT EXISTS idx_pred_bot  ON predictions(bot_id, created_at DESC);
@@ -106,10 +114,10 @@ export function openDB(path = "data/jevknows.db") {
     CREATE INDEX IF NOT EXISTS idx_pred_run  ON predictions(run_id);
     CREATE INDEX IF NOT EXISTS idx_runs_bot  ON runs(bot_id, started_at DESC);
 
-    /* Opinioni del side assistant. Tabella separata, non colonne su predictions:
-     * in modalita' blind l'opinione nasce PRIMA della predizione, in review DOPO.
-     * Metterla dentro predictions richiederebbe un UPDATE su una riga dichiarata
-     * immutabile, aprendo la porta a riscritture retroattive del giudizio. */
+    /* Side assistant opinions. Separate table, not columns on predictions:
+     * in blind mode the opinion is born BEFORE the prediction, in review mode AFTER.
+     * Putting it inside predictions would require an UPDATE on a row declared
+     * immutable, opening the door to retroactive rewrites of the judgment. */
     CREATE TABLE IF NOT EXISTS assistant_opinions (
       id                 INTEGER PRIMARY KEY AUTOINCREMENT,
       bot_id             INTEGER NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
@@ -118,7 +126,7 @@ export function openDB(path = "data/jevknows.db") {
       created_at         TEXT NOT NULL,
       event_slug         TEXT NOT NULL,
       market_label       TEXT NOT NULL,
-      -- NULL finche' la predizione non esiste (modalita' blind e pre)
+      -- NULL until the prediction exists (blind and pre modes)
       prediction_id      INTEGER REFERENCES predictions(id) ON DELETE SET NULL,
       probability        REAL,
       comment            TEXT,
@@ -144,6 +152,32 @@ export function openDB(path = "data/jevknows.db") {
       note       TEXT
     );
   `);
+
+  // Additive migration: engine_votes/engine_warning arrived after the
+  // initial schema was created. CREATE TABLE IF NOT EXISTS does not touch
+  // tables that already exist, so on an old db the columns are missing until
+  // explicitly added. ALTER TABLE ADD COLUMN is additive: existing rows stay
+  // intact, the new field starts out NULL.
+  // The migration below assumes the tables already exist. On a fresh db that
+  // is not guaranteed: if the schema above failed to create predictions, the
+  // ALTER TABLE fails and the server does not start at all. Better to notice
+  // that with a clear message than with a raw SQLiteError at startup.
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(t => t.name);
+  if (!tables.includes("predictions")) {
+    throw new Error(
+      "The schema was not created: the predictions table is missing. " +
+      `Tables present: ${tables.join(", ") || "none"}. ` +
+      "Check that every CREATE TABLE actually runs, not just the first one in the block.");
+  }
+
+  const predCols = db.prepare("PRAGMA table_info(predictions)").all().map(c => c.name);
+  if (!predCols.includes("engine_votes")) {
+    db.exec("ALTER TABLE predictions ADD COLUMN engine_votes TEXT");
+  }
+  if (!predCols.includes("engine_warning")) {
+    db.exec("ALTER TABLE predictions ADD COLUMN engine_warning TEXT");
+  }
+
   return db;
 }
 
@@ -155,7 +189,7 @@ export function createBot(db, { name, blurb, bankroll = 1000, context, threshold
     `INSERT INTO bots (name, blurb, bankroll, status, schema_version, created_at)
      VALUES (?,?,?,'paused',1,?)`).run(name, blurb ?? null, bankroll, now());
   const botId = Number(r.lastInsertRowid);
-  putConfig(db, botId, { context, thresholds, note: "config iniziale" });
+  putConfig(db, botId, { context, thresholds, note: "initial config" });
   return botId;
 }
 
@@ -169,7 +203,7 @@ export const listBots = db => db.prepare(`
 
 export const getBot = (db, id) => db.prepare("SELECT * FROM bots WHERE id=?").get(id);
 
-/** Solo questi campi sono mutabili su un bot. Non la sua storia. */
+/** Only these fields are mutable on a bot. Not its history. */
 export function setBotStatus(db, id, status) {
   db.prepare("UPDATE bots SET status=? WHERE id=?").run(status, id);
 }
@@ -186,7 +220,7 @@ export function currentConfig(db, botId) {
   return { ...row, context: JSON.parse(row.context_json), thresholds: JSON.parse(row.thresholds_json) };
 }
 
-/** Chiude la config corrente e ne apre una nuova. Mai un UPDATE sui valori. */
+/** Closes the current config and opens a new one. Never an UPDATE on the values. */
 export function putConfig(db, botId, { context, thresholds, note }) {
   const prev = db.prepare(
     "SELECT MAX(version) v FROM bot_configs WHERE bot_id=?").get(botId)?.v ?? 0;
@@ -224,8 +258,8 @@ export function insertPrediction(db, p) {
     (run_id,bot_id,bot_config_version,created_at,venue,event_slug,event_title,market_label,
      condition_id,token_id,end_date,crowd,jev,edge,evidence,confidence,rules_strict,ambiguity,
      gated,ungated,side,stake_gated,stake_ungated,model,state_snapshot,answers_json,
-     latency_ms,news_count,supersedes_prediction_id,supersede_reason)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     latency_ms,news_count,supersedes_prediction_id,supersede_reason,engine_votes,engine_warning)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     p.run_id, p.bot_id, p.bot_config_version, now(), p.venue ?? "polymarket",
     p.event_slug, p.event_title, p.market_label, p.condition_id ?? null, p.token_id ?? null,
     p.end_date ?? null, p.crowd, p.jev, p.edge, p.evidence ?? null, p.confidence ?? null,
@@ -233,7 +267,8 @@ export function insertPrediction(db, p) {
     p.side ?? null, p.stake_gated ?? 0, p.stake_ungated ?? 0,
     p.model, JSON.stringify(p.state_snapshot), JSON.stringify(p.answers),
     p.latency_ms ?? null, p.news_count ?? 0,
-    p.supersedes_prediction_id ?? null, p.supersede_reason ?? null).lastInsertRowid);
+    p.supersedes_prediction_id ?? null, p.supersede_reason ?? null,
+    p.engine_votes ? JSON.stringify(p.engine_votes) : null, p.engine_warning ?? null).lastInsertRowid);
 }
 
 export const botPredictions = (db, botId, limit = 200) => db.prepare(
@@ -248,7 +283,7 @@ export function settlePrediction(db, id, outcome, pnlGated, pnlUngated) {
               WHERE id=? AND outcome IS NULL`).run(now(), outcome, pnlGated, pnlUngated, id);
 }
 
-/* ---------- opinioni del side assistant ---------- */
+/* ---------- side assistant opinions ---------- */
 
 export function insertOpinion(db, o) {
   return Number(db.prepare(`INSERT INTO assistant_opinions
@@ -262,8 +297,8 @@ export function insertOpinion(db, o) {
     o.ok ? 1 : 0, o.error ?? null).lastInsertRowid);
 }
 
-/** Unico update ammesso: collegare un'opinione nata prima alla sua predizione.
- *  Non tocca i valori, solo il legame. */
+/** Only permitted update: linking an opinion born earlier to its prediction.
+ *  Does not touch the values, only the link. */
 export function linkOpinion(db, opinionId, predictionId) {
   db.prepare("UPDATE assistant_opinions SET prediction_id=? WHERE id=? AND prediction_id IS NULL")
     .run(predictionId, opinionId);

@@ -1,21 +1,26 @@
 /* Jev Oracle — holographic console. see design-system/jev-oracle/MASTER.md */
 :root{
-  --bg:#05080E; --panel:#0B1119; --panel2:#101A26; --line:#1C2C3E;
-  --line-strong:#38566F;
-  --ink:#DCEEF7; --dim:#7FA3BC; --acc:#4FD8E8; --acc2:#7C9CFF;
-  --ok:#4ADE80; --warn:#FBBF24; --bad:#FF7A85;
+  /* Gold on black. A warm black (not #000, which causes halation) with gold as
+   * the only accent. The contrast ratios are measured, not estimated: ink
+   * 16.4:1, dim 7.4:1, acc 11.0:1 against the background; line-strong 3.6:1
+   * because it carries state. */
+  --bg:#0B0906; --panel:#14100A; --panel2:#1E1810; --line:#2A2116;
+  --line-strong:#786646;
+  --ink:#F2E8D5; --dim:#B29B6E; --acc:#F0B90B; --acc2:#E8863C;
+  --ok:#3FD98A; --warn:#FFA726; --bad:#FF6B6B;
+  --on-acc:#1A1206;        /* testo su fondo oro pieno: 10.3:1 */
   --s1:8px; --s2:12px; --s3:16px; --s4:24px; --r:10px;
-  --glow:0 0 12px rgba(79,216,232,.35);
+  --glow:0 0 12px rgba(240,185,11,.30);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);
-  font:14px/1.55 Inter,ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font:17.5px/1.55 Inter,ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased}
 body::before{/* ambient projector haze */
   content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(79,216,232,.07),transparent 70%)}
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(240,185,11,.06),transparent 70%)}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
 
@@ -31,8 +36,8 @@ button{background:var(--panel2);color:var(--ink);border:1px solid var(--line-str
   transition:border-color .15s,background .15s,box-shadow .15s}
 button:hover:not(:disabled){border-color:var(--acc);box-shadow:var(--glow)}
 button:disabled{opacity:.45;cursor:not-allowed}
-button.primary{background:linear-gradient(180deg,#4FD8E8,#2FB6C8);border-color:var(--acc);
-  color:#03151A;font-weight:700;box-shadow:0 0 18px rgba(79,216,232,.3)}
+button.primary{background:linear-gradient(180deg,#F0B90B,#C99608);color:var(--on-acc);border-color:var(--acc);
+  color:var(--on-acc);font-weight:700;box-shadow:0 0 18px rgba(240,185,11,.3)}
 button.ghost{background:none;border-color:transparent;color:var(--dim);padding:9px 11px}
 button.ghost:hover:not(:disabled){color:var(--ink);border-color:var(--line-strong);box-shadow:none}
 button.sm{min-height:36px;padding:6px 10px;font-size:12px}
@@ -86,7 +91,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.0
 .q{border:1px solid var(--line);border-radius:9px;margin-bottom:var(--s2);background:var(--panel2);
   transition:opacity .15s,border-color .15s}
 .q.off{opacity:.42}
-.q.pri{border-color:var(--acc);box-shadow:0 0 0 1px rgba(79,216,232,.18)}
+.q.pri{border-color:var(--acc);box-shadow:0 0 0 1px rgba(240,185,11,.18)}
 .qhead{display:flex;gap:var(--s1);align-items:center;padding:8px 10px;
   border-bottom:1px solid var(--line)}
 .qhead input[type=text]{flex:1;background:none;border:none;font-weight:600;padding:3px 0;
@@ -113,7 +118,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.0
 .wire textarea{background:#04080D;font-family:ui-monospace,Menlo,monospace;
   font-size:11.5px;line-height:1.65;min-height:420px;color:#9FC4D8}
 .wire .k{color:#7FA3BC}         /* key */
-.wire .s{color:#4FD8E8}         /* string */
+.wire .s{color:#F0B90B}         /* string */
 .wire .n{color:#C4A8FF}         /* number */
 .wire .b{color:#4ADE80}         /* bool/type */
 .wire .p{color:#4A6379}         /* punctuation */
@@ -121,17 +126,17 @@ main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.0
   border-radius:8px;padding:3px;margin-bottom:var(--s2)}
 .tabs button{flex:1;border:none;background:none;color:var(--dim);border-radius:5px;
   padding:9px 6px;font-size:12px;min-height:40px}
-.tabs button[aria-selected=true]{background:var(--acc);color:#03151A;font-weight:700}
+.tabs button[aria-selected=true]{background:var(--acc);color:var(--on-acc);font-weight:700}
 .wirebadge{font-size:10.5px;color:var(--dim);font-family:ui-monospace,monospace}
 
 /* ---------- hologram verdict ---------- */
 .holo{position:relative;border:1px solid var(--line-strong);border-radius:var(--r);
   padding:var(--s4) var(--s3);background:
-    linear-gradient(180deg,rgba(79,216,232,.07),rgba(79,216,232,.02) 40%,transparent);
+    linear-gradient(180deg,rgba(240,185,11,.07),rgba(240,185,11,.02) 40%,transparent);
   overflow:hidden;margin-bottom:var(--s2)}
 .holo::before{/* scanlines */
   content:"";position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(180deg,rgba(79,216,232,.055) 0 1px,transparent 1px 3px);
+  background:repeating-linear-gradient(180deg,rgba(240,185,11,.055) 0 1px,transparent 1px 3px);
   animation:scan 7s linear infinite}
 .holo::after{/* projector cone from the emitter line */
   content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
@@ -184,7 +189,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.0
 .split i{display:block;height:100%;transition:width .4s;box-shadow:0 0 8px currentColor}
 .runs{display:flex;gap:4px;align-items:flex-end;height:36px;margin-top:6px}
 .runs i{flex:1;background:var(--acc);border-radius:3px 3px 0 0;min-height:3px;opacity:.85;
-  box-shadow:0 0 8px rgba(79,216,232,.5)}
+  box-shadow:0 0 8px rgba(240,185,11,.5)}
 
 .wait{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);
   border-radius:var(--r);padding:var(--s2);background:var(--panel2);margin-bottom:var(--s2)}
@@ -226,10 +231,10 @@ details summary{cursor:pointer;color:var(--dim);font-size:12px;min-height:44px;
 
 /* ---------- the projector ---------- */
 .projector{padding:0;overflow:hidden;position:relative;
-  background:radial-gradient(ellipse 70% 60% at 50% 100%,rgba(79,216,232,.13),transparent 70%),var(--panel)}
+  background:radial-gradient(ellipse 70% 60% at 50% 100%,rgba(240,185,11,.13),transparent 70%),var(--panel)}
 .projector canvas{display:block;width:100%;height:260px}
 .projector::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(180deg,rgba(79,216,232,.05) 0 1px,transparent 1px 3px)}
+  background:repeating-linear-gradient(180deg,rgba(240,185,11,.05) 0 1px,transparent 1px 3px)}
 .projlabel{position:absolute;left:12px;bottom:10px;font-size:10px;letter-spacing:1.4px;
   text-transform:uppercase;color:var(--acc);opacity:.8;text-shadow:var(--glow);z-index:2}
 @media(max-width:860px){.projector canvas{height:200px}}

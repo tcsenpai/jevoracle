@@ -1,14 +1,15 @@
-/* Side assistant: un LLM locale opzionale accanto a Jev.
+/* Side assistant: an optional local LLM alongside Jev.
  *
- * Regola che non si discute (policies.md §8): l'LLM non decide mai. Prepara
- * l'argomento o da' un parere affiancato, ma la firma della funzione decisionale
- * resta di Jev. `probability` prodotta qui non entra MAI in kelly() ne' nel gating.
+ * A rule that is not up for debate (policies.md §8): the LLM never decides.
+ * It prepares the argument or gives a side opinion, but the decision
+ * function's signature remains Jev's. `probability` produced here NEVER
+ * enters kelly() or the gating.
  *
- * Tre modalita', e la differenza non e' cosmetica:
- *   pre     l'LLM elabora il contesto PRIMA che Jev lo veda
- *   blind   stesso contesto di Jev, senza vedere il verdetto. Parere genuino.
- *   review  vede il verdetto e lo commenta. Contaminato per costruzione: tende a
- *           razionalizzare quello che Jev ha gia' detto, non a controllarlo.
+ * Three modes, and the difference is not cosmetic:
+ *   pre     the LLM processes the context BEFORE Jev sees it
+ *   blind   same context as Jev, without seeing the verdict. Genuine opinion.
+ *   review  sees the verdict and comments on it. Contaminated by construction:
+ *           it tends to rationalize what Jev already said, not to check it.
  */
 import { askJSON } from "./llm.js";
 
@@ -32,9 +33,9 @@ export function normaliseAssistant(cfg = {}) {
   return a;
 }
 
-/* L'arricchimento e' il punto dove l'LLM puo' contaminare Jev: se scrive una
- * conclusione invece di un fatto, Jev la legge come evidenza. Il prompt lo vieta
- * e `looksLikeJudgement` lo verifica a valle. */
+/* Enrichment is the point where the LLM can contaminate Jev: if it writes a
+ * conclusion instead of a fact, Jev reads it as evidence. The prompt forbids
+ * it and `looksLikeJudgement` checks for it downstream. */
 const PRE_SYSTEM = `You prepare context for a separate decision system. You do NOT judge.
 Output ONLY JSON: {"facts":["..."],"gaps":["..."]}.
 RULES:
@@ -54,7 +55,7 @@ RULES:
 - gaps lists what is missing from the context, at most 4 items.
 - Never mention any market price, odds, or what traders think.`;
 
-/* Se l'arricchimento contiene un giudizio complessivo, non e' un arricchimento. */
+/* If the enrichment contains an overall judgment, it is not an enrichment. */
 const JUDGEMENT = /\b(likely|unlikely|probable|improbable|favou?rite|favou?red|will (?:probably|likely)|i (?:think|believe|expect)|my estimate|seems certain|almost certain|no chance)\b/i;
 export const looksLikeJudgement = t => JUDGEMENT.test(String(t ?? ""));
 
@@ -68,9 +69,9 @@ function renderState(state) {
 }
 
 /**
- * Esegue il side assistant. Non solleva mai se onFailure e' "skip": restituisce
- * una riga con ok:false e il motivo, perche' un assistente opzionale che rompe
- * lo scan sarebbe peggio di un assistente assente.
+ * Runs the side assistant. Never throws if onFailure is "skip": it returns a
+ * row with ok:false and the reason, because an optional assistant that
+ * breaks the scan would be worse than no assistant at all.
  */
 export async function runAssistant({ config, state, question, jevVerdict = null }) {
   const cfg = normaliseAssistant(config);
@@ -91,9 +92,9 @@ export async function runAssistant({ config, state, question, jevVerdict = null 
       hosts: cfg.hosts, model: cfg.model, system, user,
       maxTokens: cfg.maxTokens, temperature: cfg.temperature, timeoutMs: cfg.timeoutMs,
       validate: d => {
-        if (wantsPre) return Array.isArray(d?.facts) ? null : "manca l'array `facts`";
+        if (wantsPre) return Array.isArray(d?.facts) ? null : "missing `facts` array";
         if (cfg.outputs.probability && clamp01(d?.probability) == null)
-          return "`probability` deve essere un numero fra 0 e 1";
+          return "`probability` must be a number between 0 and 1";
         return null;
       },
     });

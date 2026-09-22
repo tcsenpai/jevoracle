@@ -89,7 +89,7 @@ export async function scan(opts = {}) {
       ({ request } = toJevRequest(ev, { market, news: news.items }));
       // honour the Context tab: drop any field the user switched off
       request = applyFields(request, cfg.fields ?? {});
-      // invariante: il prezzo di mercato non entra mai nello stato
+      // invariant: the market price never enters the state
       assertSafeRequest(request);
       const out = await jev(request, key);
       answers = out.data.answers; ms = out.data._ms ?? out.ms; modelId = out.data.model ?? null; asked++;

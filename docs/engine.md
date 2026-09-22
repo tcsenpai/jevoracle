@@ -1,4 +1,13 @@
-# The paper trading engine
+# The paper trading engine (single bot, superseded)
+
+> This is the original single-bot loop and the direct ancestor of the JevKnows
+> platform. It still runs, and its dashboard is still served at `/engine.html`,
+> but it has one global configuration and one record. The multi-bot platform in
+> `platform/` replaced it: independent bots, three interchangeable decision
+> engines with a weighted quorum, per-bot append-only configuration history, and
+> on-demand local engines. Start from the top-level README instead. Keep reading
+> here for how the original loop worked, which is still the shape of the scan
+> and settle cycle underneath.
 
 A loop that asks Jev about live Polymarket markets, records what it said next to
 what the crowd said at that moment, and scores the result when the market resolves.

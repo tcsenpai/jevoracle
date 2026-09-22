@@ -1,42 +1,44 @@
 # JevKnows
 
-## Nome
+## Name
 
-Il gioco di parole e' il punto: "Jev knows" e "who knows?". Un sistema il cui
-segnale piu' utile e' quanto dichiara di NON sapere merita un nome ambiguo.
+The pun is the point: "Jev knows" and "who knows?". A system whose most
+useful signal is how much it declares it does NOT know deserves an ambiguous
+name.
 
-## Cosa e'
+## What it is
 
-Una sala controllo per esperimenti di giudizio, non un bot di trading. La domanda
-a cui risponde non e' "quanto ho guadagnato" ma "questo bot sa quello che dice di
-sapere?".
+A control room for judgment experiments, not a trading bot. The question it
+answers is not "how much did I make" but "does this bot know what it claims
+to know?".
 
-Il fatto che l'ha generata: su un mercato F1 Jev ha sbagliato di 80 punti e
-contemporaneamente ha dichiarato evidence_sufficient al 12 per cento. Sapeva di
-non sapere. Quello e' il prodotto.
+The fact that generated it: on an F1 market Jev was off by 80 points and at
+the same time declared evidence_sufficient at 12 percent. It knew that it did
+not know. That is the product.
 
-## Gerarchia delle pagine
+## Page hierarchy
 
-| Pagina | Ruolo |
+| Page | Role |
 | --- | --- |
-| `/` | Lista bot, stile exchange. Il centro della piattaforma. |
-| `/bot/:id` | Dettaglio di un singolo bot: run, predizioni, calibrazione, config |
-| `/console` | Il playground a domande tipizzate. Declassato, serve per giocare. |
+| `/` | Bot list, exchange-style. The center of the platform. |
+| `/bot/:id` | Detail of a single bot: runs, predictions, calibration, config |
+| `/console` | The typed-questions playground. Demoted, it is there to play with. |
 
-## Tono
+## Tone
 
-Strumento, non casino. Niente verde e rosso come approvazione, niente urgenza,
-niente gamification, niente coriandoli quando un bot indovina. I numeri sono
-misure, non punteggi.
+A tool, not a casino. No green and red as approval, no urgency, no
+gamification, no confetti when a bot guesses right. The numbers are
+measurements, not scores.
 
-Il verde su un verdetto significa "distribuzione concentrata", non "buona
-notizia". Un 95 per cento su una domanda terribile resta verde.
+Green on a verdict means "concentrated distribution", not "good news". A 95
+percent on a terrible question stays green.
 
-## Regole che il brand impone al prodotto
+## Rules the brand imposes on the product
 
-1. Il prezzo di mercato non entra mai nello stato mandato a Jev. Altrimenti si
-   misura se sa leggere un numero, non se sa giudicare.
-2. L'evidence dichiarata dal modello si mostra sempre accanto al verdetto, mai
-   nascosta in un pannello secondario.
-3. Una predizione e' un evento immutabile. Non si riscrive la storia.
-4. Se un dato manca si scrive che manca. Non si stima, non si arrotonda.
+1. The market price never enters the state sent to Jev. Otherwise you measure
+   whether it can read a number, not whether it can judge.
+2. The evidence declared by the model is always shown next to the verdict,
+   never hidden in a secondary panel.
+3. A prediction is an immutable event. History is not rewritten.
+4. If a piece of data is missing, it is written as missing. Nothing is
+   estimated, nothing is rounded.

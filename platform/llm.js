@@ -1,38 +1,38 @@
-/* Client per un LLM locale OpenAI-compatible (Ollama), con guardia sul formato.
+/* Client for a local OpenAI-compatible LLM (Ollama), with a guard on the format.
  *
- * Due cose imparate misurando su gemma4:e4b, non dedotte:
+ * Two things learned by measuring on gemma4:e4b, not deduced:
  *
- * 1. E' un reasoning model. Spende token nel campo `reasoning` PRIMA di produrre
- *    `content`. Con budget stretto li esaurisce tutti la' e restituisce content
- *    vuoto con finish_reason "length" e NESSUN errore HTTP: il fallimento e'
- *    silenzioso e il parse fallisce a valle senza spiegare perche'.
- * 2. `reasoning_effort: "none"` lo spegne. Misurato sul prompt reale di decompose:
- *    3.2s contro 24.6s, stessa qualita', con un quarto dei token. Le alternative
- *    (`think:false`, `chat_template_kwargs.enable_thinking`) non fanno nulla o
- *    peggiorano.
+ * 1. It is a reasoning model. It spends tokens in the `reasoning` field BEFORE
+ *    producing `content`. With a tight budget it exhausts them all there and
+ *    returns empty content with finish_reason "length" and NO HTTP error: the
+ *    failure is silent and the parse fails downstream without explaining why.
+ * 2. `reasoning_effort: "none"` turns it off. Measured on the real decompose
+ *    prompt: 3.2s versus 24.6s, same quality, with a quarter of the tokens.
+ *    The alternatives (`think:false`, `chat_template_kwargs.enable_thinking`)
+ *    do nothing or make it worse.
  */
 
 export const DEFAULT_MODEL = "gemma4:e4b";
-export const MAX_ATTEMPTS = 4;          // poi si fallisce forte, niente silenzi
+export const MAX_ATTEMPTS = 4;          // then it fails loudly, no silent failures
 
 export class LLMError extends Error {
   constructor(message, attempts) { super(message); this.name = "LLMError"; this.attempts = attempts; }
 }
 
-/** Perche' una risposta e' inutilizzabile. Null se va bene. */
+/** Why a response is unusable. Null if it is fine. */
 function rejectReason(data, { validate }) {
   const choice = data?.choices?.[0];
-  if (!choice) return "risposta senza choices";
+  if (!choice) return "response has no choices";
   const content = choice.message?.content ?? "";
-  // il troncamento da reasoning non e' un errore HTTP: va riconosciuto qui
+  // truncation from reasoning is not an HTTP error: it must be recognized here
   if (choice.finish_reason === "length" && !content.trim())
-    return "budget esaurito nel reasoning (finish_reason=length, content vuoto)";
-  if (choice.finish_reason === "length") return "risposta troncata (finish_reason=length)";
-  if (!content.trim()) return "content vuoto";
+    return "budget exhausted in reasoning (finish_reason=length, empty content)";
+  if (choice.finish_reason === "length") return "truncated response (finish_reason=length)";
+  if (!content.trim()) return "empty content";
 
   let parsed;
   try { parsed = JSON.parse(content); }
-  catch (e) { return `JSON non valido: ${e.message}`; }
+  catch (e) { return `invalid JSON: ${e.message}`; }
 
   if (validate) {
     const problem = validate(parsed);
@@ -42,26 +42,26 @@ function rejectReason(data, { validate }) {
 }
 
 /**
- * Chiede JSON a un LLM locale. Riprova fino a MAX_ATTEMPTS, poi solleva.
+ * Asks a local LLM for JSON. Retries up to MAX_ATTEMPTS, then throws.
  *
- * Ogni tentativo alza il budget di token e abbassa la temperatura: se la prima
- * risposta e' troncata, insistere con gli stessi parametri e' inutile.
+ * Each attempt raises the token budget and lowers the temperature: if the
+ * first response was truncated, insisting with the same parameters is useless.
  *
  * @param {object} opts
- * @param {string[]} opts.hosts    base url in ordine di preferenza
- * @param {function} opts.validate (parsed) => string|null, null se valido
+ * @param {string[]} opts.hosts    base urls in order of preference
+ * @param {function} opts.validate (parsed) => string|null, null if valid
  */
 export async function askJSON({
   hosts, model = DEFAULT_MODEL, system, user,
   maxTokens = 900, temperature = 0.4, timeoutMs = 30_000,
   validate = null, attempts = MAX_ATTEMPTS, noReasoning = true,
 }) {
-  if (!hosts?.length) throw new LLMError("nessun host configurato", 0);
+  if (!hosts?.length) throw new LLMError("no host configured", 0);
   const tried = [];
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    // piu' margine a ogni giro, e meno creativita': il fallimento tipico e'
-    // troncamento o formato, non mancanza di fantasia
+    // more headroom each round, and less creativity: the typical failure is
+    // truncation or format, not lack of imagination
     const budget = Math.round(maxTokens * (1 + 0.6 * (attempt - 1)));
     const temp = Math.max(0.05, temperature - 0.1 * (attempt - 1));
     const host = hosts[(attempt - 1) % hosts.length];
@@ -75,18 +75,18 @@ export async function askJSON({
 
     const started = Date.now();
     try {
-      // gli host in configurazione possono gia' finire con /v1: non raddoppiarlo
+      // hosts in configuration may already end with /v1: do not double it up
       const root = host.replace(/\/+$/, "");
       const endpoint = `${root}${/\/v1$/.test(root) ? "" : "/v1"}/chat/completions`;
       const res = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs),
       });
-      if (!res.ok) { tried.push(`tentativo ${attempt} su ${host}: HTTP ${res.status}`); continue; }
+      if (!res.ok) { tried.push(`attempt ${attempt} on ${host}: HTTP ${res.status}`); continue; }
 
       const data = await res.json();
       const bad = rejectReason(data, { validate });
-      if (bad) { tried.push(`tentativo ${attempt} su ${host}: ${bad}`); continue; }
+      if (bad) { tried.push(`attempt ${attempt} on ${host}: ${bad}`); continue; }
 
       return {
         data: JSON.parse(data.choices[0].message.content),
@@ -95,11 +95,11 @@ export async function askJSON({
         usage: data.usage ?? null,
       };
     } catch (err) {
-      const why = err.name === "TimeoutError" ? `timeout dopo ${timeoutMs}ms` : (err.message ?? String(err));
-      tried.push(`tentativo ${attempt} su ${host}: ${why}`);
+      const why = err.name === "TimeoutError" ? `timeout after ${timeoutMs}ms` : (err.message ?? String(err));
+      tried.push(`attempt ${attempt} on ${host}: ${why}`);
     }
   }
 
   throw new LLMError(
-    `LLM locale fallito dopo ${attempts} tentativi. ${tried.join(" | ")}`, attempts);
+    `Local LLM failed after ${attempts} attempts. ${tried.join(" | ")}`, attempts);
 }

@@ -1,15 +1,29 @@
 {
-  "name": "jevoracle",
+  "name": "jevknows",
   "version": "1.0.0",
-  "description": "A console for asking Jev typed questions over your own state",
+  "description": "A control room for prediction-market bots that bet with fake money on real markets, judged by three interchangeable typed-decision engines",
   "type": "module",
   "private": false,
   "license": "MIT",
   "scripts": {
     "start": "bun run server.js",
-    "dev": "bun --watch server.js"
+    "dev": "bun --watch server.js",
+    "test": "bun platform/quorum.test.js"
   },
   "engines": {
     "bun": ">=1.1.0"
+  },
+  "keywords": [
+    "prediction-markets",
+    "polymarket",
+    "typed-decisions",
+    "jev",
+    "typesafe",
+    "paper-trading",
+    "calibration"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tcsenpai/jevoracle.git"
   }
 }

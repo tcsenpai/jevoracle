@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bot detail | JevKnows</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/jevknows.css">
+</head><body>
+
+<header>
+  <h1>Jev<b>Knows</b></h1>
+  <span class="spacer"></span>
+  <a class="navlink" href="/jevknows.html">My bots</a>
+  <a class="navlink" href="/engine.html">Console</a>
+</header>
+
+<div class="wrap">
+  <div id="err" aria-live="polite"></div>
+
+  <div class="dethead" id="dethead">
+    <div>
+      <h1 id="botName">Loading…</h1>
+      <div class="sub" id="botSub"></div>
+    </div>
+    <div class="actions" id="botActions" hidden>
+      <button class="ghost" id="btnRun">Run it</button>
+      <button class="ghost" id="btnSettle">Check outcomes</button>
+      <button class="ghost" id="btnPause">Pause</button>
+      <a class="navlink" id="btnConfig" href="#">Settings</a>
+    </div>
+  </div>
+
+  <!-- ============ LEADING INDICATORS ============ -->
+  <section class="card">
+    <div class="split-head"><span class="tag leading">leading indicators</span>
+      <h2>Readable right away, but they prove nothing</h2></div>
+    <p class="split-note">These numbers update after every prediction. They tell you
+      <em>how the bot behaves</em>, how often it holds back, how much it claims to
+      know, but none of them prove the bot is right. Only closed markets can tell
+      you that, see below.</p>
+    <section class="kpis" id="kpisLeading"></section>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section class="card">
+    <div class="split-head"><span class="tag settled">results</span>
+      <h2>Needs markets to have closed</h2></div>
+    <p class="split-note" id="settledNote"></p>
+    <section class="kpis" id="kpisSettled"></section>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <h2><span class="dot"></span>Calibration
+        <span class="spacer"></span>
+        <span class="muted" style="text-transform:none;letter-spacing:0">predicted vs. actual, closed markets only</span></h2>
+      <p class="hint" style="margin-top:0">For every probability band the bot declared,
+        this compares how often the event actually happened. If the two bars look
+        alike, when the bot says "70%" things really happen about 7 times out of 10.</p>
+      <div id="calib"></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Does holding back actually help?</h2>
+      <p class="hint" style="margin-top:0">The bot self-reports how informed it feels
+        (<span class="gloss">evidence <span class="glosstip">(how much it says it knows)</span></span>).
+        The "cautious" rule only bets when this value is high. If the two bars below
+        are genuinely different, it means caution is picking the right moments to trust it.</p>
+      <div id="gatecmp"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="dot"></span>Predictions <span class="spacer"></span>
+      <span class="muted" id="predinfo"></span></h2>
+    <p class="hint" style="margin-top:0">Each row is a judgment that never changes: once
+      recorded it is never rewritten, even if the context changes later.</p>
+    <div class="tablewrap"><table id="predtable">
+      <thead><tr>
+        <th>when</th><th>market</th><th class="r">market said</th><th class="r">bot said</th>
+        <th class="r">difference</th><th class="r">how informed</th>
+        <th>who decided</th>
+        <th><span class="gloss">bet? <span class="glosstip">(in parentheses: what the free rule would have done)</span></span></th>
+        <th>side</th>
+        <th class="r">stake</th><th>outcome</th><th class="r">config</th>
+      </tr></thead><tbody><tr><td colspan="11" class="empty">Loading…</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <h2><span class="dot"></span>Runs <span class="spacer"></span>
+        <span class="muted" id="runinfo"></span></h2>
+      <p class="hint" style="margin-top:0">A run is a session in which the bot looked at
+        markets and answered. Every time you press "Run it" a new one starts.</p>
+      <div class="tablewrap"><table id="runtable">
+        <thead><tr><th>started</th><th>type</th><th class="r">markets seen</th>
+          <th class="r">questions asked</th><th class="r">predictions saved</th><th>status</th></tr></thead>
+        <tbody><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Settings history <span class="spacer"></span>
+        <span class="muted">no version is ever deleted</span></h2>
+      <p class="hint" style="margin-top:0">Every prediction stays tied to the settings
+        version that was active when it was made. Changing a threshold today does not
+        rewrite what a prediction made yesterday, under different thresholds, meant.</p>
+      <div id="cfghist"></div>
+    </div>
+  </section>
+</div>
+
+<script type="module" src="/bot.js"></script>
+</body></html>

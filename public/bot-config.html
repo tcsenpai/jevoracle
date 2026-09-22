@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Configure bot | JevKnows</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/jevknows.css">
+</head><body>
+
+<header>
+  <h1>Jev<b>Knows</b></h1>
+  <span class="spacer"></span>
+  <a class="navlink" id="backLink" href="/jevknows.html">My bots</a>
+  <a class="navlink" href="/engine.html">Console</a>
+</header>
+
+<div class="wrap">
+  <div id="err" aria-live="polite"></div>
+
+  <div class="dethead">
+    <div>
+      <h1 id="title">Configure bot</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+  </div>
+
+  <div class="versionote">
+    <b>Saving creates a new settings version.</b> It never overwrites the current
+    one. Every prediction already recorded stays tied to the version that was
+    active when it was made, changing a threshold today does not rewrite what a
+    prediction made yesterday meant.
+  </div>
+
+  <form id="form" class="form-card">
+    <!-- ============ BASICS: always visible ============ -->
+    <section class="card form-card">
+      <h2><span class="dot"></span>The basics</h2>
+      <p class="hint" style="margin-top:0" id="basicsHint">All you need is a name to create a bot.
+        Everything else already has a sensible starting value.</p>
+      <div class="field">
+        <label for="fName">Name</label>
+        <input type="text" id="fName" required placeholder="e.g. geopolitics">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="fBlurb">Short description (optional)</label>
+          <input type="text" id="fBlurb" placeholder="e.g. geopolitical markets only">
+        </div>
+        <div class="field">
+          <label for="fBankroll">Virtual bankroll</label>
+          <input type="text" inputmode="decimal" id="fBankroll">
+          <span class="help">Fake money, only used to size simulated bets. No real
+            money ever moves.</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="row" style="gap:8px;font-weight:400">
+          <input type="checkbox" id="saOn"> Turn on the side assistant
+        </label>
+        <span class="help">A second, optional model that can comment on the main
+          bot's answer. Off by default. It never changes the bot's judgment, at
+          most it adds a second opinion alongside it.</span>
+      </div>
+    </section>
+
+    <!-- ============ ADVANCED: collapsed by default ============ -->
+    <details class="advanced">
+      <summary>Numeric thresholds <small>when to bet, and how cautiously</small></summary>
+      <div class="adv-body">
+        <p class="hint" style="margin:0">Every threshold has a line below it explaining what
+          happens if you raise or lower it. You don't need to touch them: the starting
+          values are fine to begin with.</p>
+
+        <div class="threshold">
+          <div class="th-head">
+            <label for="tMaxHorizon">Closes within how many days <span class="glosstip">(0 = no limit)</span></label>
+            <input type="number" id="tMaxHorizon" step="1" min="0" max="3650">
+          </div>
+          <p class="effect">The bot only looks at markets that resolve within this many
+            days. <b>Lower</b> = money comes back sooner and you get quick feedback on
+            how well the bot does, but fewer markets to choose from. <b>Higher</b> = more
+            choice, but the money stays committed longer and results take months to arrive.</p>
+        </div>
+
+        <div class="threshold">
+          <div class="th-head">
+            <label for="tMinEdge">Minimum edge <span class="glosstip">(minimum difference from the market price)</span></label>
+            <input type="number" id="tMinEdge" step="0.01" min="0" max="0.5">
+          </div>
+          <p class="effect">How far the bot must diverge from the market price before the
+            prediction counts as a real bet. <b>Higher</b> = it only bets when it strongly
+            disagrees with the market, so it bets less often. <b>Lower</b> = it bets even
+            on small disagreements, so it bets more often.</p>
+        </div>
+
+        <div class="threshold">
+          <div class="th-head">
+            <label for="tMinEvidence">Minimum evidence <span class="glosstip">(how much it must say it knows to be trusted)</span></label>
+            <input type="number" id="tMinEvidence" step="0.05" min="0" max="1">
+          </div>
+          <p class="effect">How informed the bot must declare itself before the
+            "cautious" rule lets it bet. <b>Higher</b> = it holds back more often, only
+            betting when it says it is very informed. <b>Lower</b> = it bets even when it
+            declares low confidence.</p>
+        </div>
+
+        <div class="threshold">
+          <div class="th-head">
+            <label for="tMinVolume">Minimum volume <span class="glosstip">(how much the market must be trading)</span></label>
+            <input type="number" id="tMinVolume" step="1000" min="0">
+          </div>
+          <p class="effect">Below how many dollars of trading a market gets ignored
+            entirely. <b>Higher</b> = it only looks at large, liquid markets. <b>Lower</b> =
+            it also looks at small, thinly traded markets.</p>
+        </div>
+
+        <div class="threshold">
+          <div class="th-head">
+            <label for="tKelly">Kelly fraction <span class="glosstip">(how much to risk on each bet)</span></label>
+            <input type="number" id="tKelly" step="0.05" min="0" max="1">
+          </div>
+          <p class="effect">How much of the virtual bankroll to risk on each single
+            bet, following a standard risk-management formula. <b>Higher</b> = bigger
+            bets, more pronounced wins and losses. <b>Lower</b> = smaller, more
+            cautious bets.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="advanced">
+      <summary>What the bot sees <small>which information it receives before answering</small></summary>
+      <div class="adv-body">
+        <p class="hint" style="margin:0">The market price <em>never</em> enters this
+          information: otherwise we would be measuring whether the bot can read a
+          number, not whether it can judge a situation.</p>
+        <div class="checklist" id="ctxFields"></div>
+      </div>
+    </details>
+
+    <details class="advanced">
+      <summary>Which markets to watch <small>list of events or categories</small></summary>
+      <div class="adv-body">
+        <div class="field">
+          <label for="fUniverse">One event or category per line</label>
+          <textarea id="fUniverse" rows="4" spellcheck="false"
+            placeholder="nato-x-russia-military-clash-in-2025&#10;politics&#10;economy"></textarea>
+          <span class="help">Leave empty to not restrict the choice of markets.</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="advanced">
+      <summary>Who makes the decision <small>which engine answers, or how many together</small></summary>
+      <div class="adv-body">
+        <p class="hint" style="margin:0">Three engines can answer the exact same way to the
+          same questions: Jev (remote, free but with a call quota), Laya
+          and Kev (both on your own machine, no call limit but slower). You can
+          use just one, or have them vote together.</p>
+
+        <div class="enginechoice">
+          <label class="engrow">
+            <input type="radio" name="fEngine" value="quorum" id="eQuorum">
+            <span><b>Quorum of three (recommended)</b>
+              <small>All three answer and their opinions are weighted together. Slower
+                and consumes Jev quota on every question, but it shows when the engines
+                disagree, instead of hiding it behind a single number.</small></span>
+          </label>
+          <label class="engrow">
+            <input type="radio" name="fEngine" value="jev" id="eJev">
+            <span><b>Jev only</b>
+              <small>The fastest (under a second) and the closest to market
+                consensus. Every question consumes call quota.</small></span>
+          </label>
+          <label class="engrow">
+            <input type="radio" name="fEngine" value="laya" id="eLaya">
+            <span><b>Laya only</b>
+              <small>Runs on your own machine, no call limit. Slower than Jev, and
+                on some questions gives answers very far from the other two engines.</small></span>
+          </label>
+          <label class="engrow">
+            <input type="radio" name="fEngine" value="kev" id="eKev">
+            <span><b>Kev only</b>
+              <small>Runs on your own machine, no call limit. The slowest of all
+                on our setups (up to 19 seconds), but closer than Laya to the
+                consensus of the other engines.</small></span>
+          </label>
+        </div>
+
+        <div id="quorumWeights" class="subrow" style="margin-top:var(--s2)">
+          <div class="field">
+            <label for="eWJev">Jev's weight</label>
+            <input type="number" id="eWJev" step="0.1" min="0.1">
+          </div>
+          <div class="field">
+            <label for="eWLaya">Laya's weight</label>
+            <input type="number" id="eWLaya" step="0.1" min="0.1">
+          </div>
+          <div class="field">
+            <label for="eWKev">Kev's weight</label>
+            <input type="number" id="eWKev" step="0.1" min="0.1">
+          </div>
+        </div>
+        <p class="hint" style="margin:6px 0 0">Whoever has the highest weight wins when the
+          three engines disagree. With the starting values, Jev wins on its own even if
+          both Laya and Kev say the opposite, because its weight outweighs their sum.</p>
+
+        <p class="hint enginewarn">The local engines (Laya, Kev) must be started separately
+          on your machine. If they are not running, the bot will only find out when it
+          tries to get an answer from them: see <span class="mono">platform/ENGINES.md</span>
+          for how to start them.</p>
+      </div>
+    </details>
+
+    <details class="advanced" id="saDetails">
+      <summary>Side assistant settings <small>host, model, mode</small></summary>
+      <div class="adv-body">
+        <fieldset id="saFields">
+          <legend>Assistant</legend>
+          <div class="subrow">
+            <div class="field">
+              <label for="saHost">Server addresses</label>
+              <input type="text" id="saHost" placeholder="http://192.168.1.20:11434, http://192.168.1.6:11434">
+              <span class="help">Comma-separated. Tried in order.</span>
+            </div>
+            <div class="field">
+              <label for="saModel">Model</label>
+              <input type="text" id="saModel" placeholder="model name">
+            </div>
+          </div>
+          <div class="field">
+            <label for="saMode">Mode</label>
+            <select id="saMode">
+              <option value="pre">before, sees the question before the main bot answers</option>
+              <option value="blind">blind, answers on its own, never sees the main bot's answer</option>
+              <option value="review">after, sees the main bot's answer and comments on it</option>
+            </select>
+          </div>
+          <div class="checklist">
+            <label class="checkrow"><input type="checkbox" id="saOutVerdict">
+              <span><b>A second verdict</b><small>an independent probability estimate, alongside the main bot's</small></span></label>
+            <label class="checkrow"><input type="checkbox" id="saOutRationale">
+              <span><b>Written explanation</b><small>the reasoning in text, saved but not used for scoring</small></span></label>
+            <label class="checkrow"><input type="checkbox" id="saOutFlag">
+              <span><b>Flag disagreements</b><small>marks predictions where the assistant disagrees with the main bot</small></span></label>
+          </div>
+        </fieldset>
+      </div>
+    </details>
+
+    <section class="card form-card">
+      <div class="field">
+        <label for="fNote">Note about this version (optional)</label>
+        <input type="text" id="fNote" placeholder="what changed and why">
+      </div>
+      <div class="row">
+        <button type="submit" class="primary" id="btnSave">Save as new version</button>
+        <a class="navlink" id="cancelLink" href="/jevknows.html">Cancel</a>
+        <span class="spacer"></span>
+        <span class="muted" id="saveMsg" aria-live="polite"></span>
+      </div>
+    </section>
+  </form>
+</div>
+
+<script type="module" src="/bot-config.js"></script>
+</body></html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Create your first bot | JevKnows</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/jevknows.css">
+</head><body>
+
+<header>
+  <h1>Jev<b>Knows</b></h1>
+  <span class="muted">guided tutorial, optional</span>
+  <span class="spacer"></span>
+  <a class="navlink" href="/">Exit without creating anything</a>
+</header>
+
+<div class="wrap wizard-wrap">
+  <!-- progress bar: aria-current on the active step, announced by spoken
+       text and not just by the colored dots -->
+  <nav class="wizsteps" aria-label="Tutorial progress">
+    <ol id="wizSteps">
+      <li data-step="1"><span class="num">1</span><span class="lbl">What is a bot</span></li>
+      <li data-step="2"><span class="num">2</span><span class="lbl">Name</span></li>
+      <li data-step="3"><span class="num">3</span><span class="lbl">Caution</span></li>
+      <li data-step="4"><span class="num">4</span><span class="lbl">Done</span></li>
+    </ol>
+    <p class="wizsteps-status" id="wizStepsStatus" aria-live="polite"></p>
+  </nav>
+
+  <section class="card wizcard">
+
+    <!-- ============ STEP 1 ============ -->
+    <div class="wizpanel" id="step1">
+      <h2>What a bot is, in here</h2>
+      <p>A bot is a set of rules. It decides three things:</p>
+      <ul class="wizlist">
+        <li><b>Which markets to watch</b> on Polymarket (all of them, or just one
+          category such as geopolitics).</li>
+        <li><b>How much context to give Jev</b> before asking it for a probability: the
+          market's rules, the dates, recent news.</li>
+        <li><b>How much disagreement with the market price</b> is needed before the bot
+          decides to bet, instead of standing aside.</li>
+      </ul>
+      <div class="wiznote">
+        <b>No real money ever moves.</b> Every bot has a fake bankroll, it only
+        serves to size simulated bets, to see whether the bot's reasoning holds up
+        over time, not to make money.
+      </div>
+      <div class="wiznote">
+        <b>Jev is not a chatbot.</b> It doesn't converse and has no memory of the
+        chat. It's a function: it receives the state of a market (rules, dates,
+        news) and returns a typed number, a probability between 0 and 1. Everything
+        that happens after that, whether to bet or not, how much to bet, is decided
+        by the bot's rules, not by Jev.
+      </div>
+      <div class="wizactions">
+        <span class="spacer"></span>
+        <button type="button" class="primary" id="toStep2">Got it, let's continue</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 2 ============ -->
+    <div class="wizpanel" id="step2" hidden>
+      <h2>Give your bot a name</h2>
+      <p class="hint" style="margin-top:0">The name is only used to recognize it in the list.
+        You can create more later, with different names and rules.</p>
+      <div class="field">
+        <label for="wName">Bot name</label>
+        <input type="text" id="wName" required placeholder="e.g. geopolitics" autocomplete="off">
+        <span class="help" id="wNameHelp">Required.</span>
+      </div>
+      <div class="field">
+        <label for="wBlurb">Description (optional)</label>
+        <input type="text" id="wBlurb" placeholder="e.g. geopolitical markets only">
+        <button type="button" class="ghost sm" id="wUseExample">Use this example</button>
+      </div>
+      <div class="wizactions">
+        <button type="button" class="ghost" id="toStep1">Back</button>
+        <span class="spacer"></span>
+        <button type="button" class="primary" id="toStep3" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 3 ============ -->
+    <div class="wizpanel" id="step3" hidden>
+      <h2>How cautious should it be</h2>
+      <p class="hint" style="margin-top:0">Pick a starting style. These are numeric
+        thresholds already set, you don't need to fully understand them to get started.</p>
+
+      <div class="wizpresets" role="radiogroup" aria-label="Caution style">
+        <label class="wizpreset">
+          <input type="radio" name="wPreset" value="prudente" checked>
+          <div class="wizpreset-body">
+            <div class="wizpreset-head"><b>Cautious</b> <span class="pill" style="border-color:var(--ok);color:var(--ok)">recommended</span></div>
+            <p>Only bets when it strongly disagrees with the market <i>and</i> says it
+              has enough information.</p>
+            <p class="wizpreset-effect">Will make fewer predictions, but each one more deliberate.</p>
+          </div>
+        </label>
+        <label class="wizpreset">
+          <input type="radio" name="wPreset" value="curioso">
+          <div class="wizpreset-body">
+            <div class="wizpreset-head"><b>Curious</b></div>
+            <p>Bets more often, even when it is less sure of itself.</p>
+            <p class="wizpreset-effect">Will make more predictions, some on weaker grounds.</p>
+          </div>
+        </label>
+      </div>
+
+      <p class="hint">Want to tune the numeric thresholds yourself (minimum edge, minimum
+        evidence, volume, Kelly fraction)? You can do that later, any time, from the
+        bot's <b>Settings</b>.</p>
+
+      <div class="wizactions">
+        <button type="button" class="ghost" id="toStep2b">Back</button>
+        <span class="spacer"></span>
+        <button type="button" class="primary" id="toStep4">Create the bot</button>
+      </div>
+      <div id="wizCreateErr" aria-live="polite"></div>
+    </div>
+
+    <!-- ============ STEP 4 ============ -->
+    <div class="wizpanel" id="step4" hidden>
+      <h2 id="doneHeading">Done</h2>
+      <p id="doneIntro" class="hint" style="margin-top:0"></p>
+      <ol class="wiznextlist">
+        <li>Press <b>Run it</b> on the bot's page: it will look at markets and evaluate
+          whether to bet, following the rules you just picked.</li>
+        <li>Predictions show up right away, but they <b>don't prove anything yet</b>. It
+          takes quite a few before you can say whether the bot gets it right.</li>
+        <li>Real results arrive once Polymarket <b>resolves</b> the markets: that can
+          take anywhere from a few days to a few weeks.</li>
+      </ol>
+      <div class="wizactions">
+        <a class="cta" id="goToBot" href="#">Go to my bot</a>
+        <a class="navlink" href="/">Back to the list</a>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<script type="module" src="/wizard.js"></script>
+</body></html>

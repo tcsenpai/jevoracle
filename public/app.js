@@ -1,5 +1,5 @@
 import { mountJev } from "/jev3d.js";
-/* Jev Oracle — the wire format is the product, not an implementation detail. */
+/* Jev Oracle, the wire format is the product, not an implementation detail. */
 const $ = s => document.querySelector(s);
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const pct = n => (n*100).toFixed(0)+"%";
@@ -90,9 +90,9 @@ function renderQs(){
     const el=document.createElement("div");
     el.className="q"+(q.on?"":" off")+(q.primary?" pri":"");
     const isC=q.type==="choice", isS=q.type==="score", isN=q.type==="noul";
-    const critLabel=isC?"Options — key → description (description optional)"
+    const critLabel=isC?"Options, key → description (description optional)"
                    :isS?"Levels, lowest first (2–10)"
-                   :"Criteria (optional) — what yes and no mean";
+                   :"Criteria (optional), what yes and no mean";
     el.innerHTML=`
       <div class="qhead">
         <input type="checkbox" ${q.on?"checked":""} data-a="on" aria-label="Enable question">
@@ -216,7 +216,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   $("#wireHint").hidden = tab==="edit";
   $("#wireMsg").textContent="";
   if(tab==="edit") $("#wireEdit").value=JSON.stringify(buildBody(),null,2);
-  if(tab==="res"&&!LASTRES) $("#wireRes").innerHTML=`<span class="p">// no response yet — press Send</span>`;
+  if(tab==="res"&&!LASTRES) $("#wireRes").innerHTML=`<span class="p">// no response yet, press Send</span>`;
 });
 /* editing the JSON drives the controls: the two views are one model */
 $("#applyJson").onclick=()=>{
@@ -225,7 +225,7 @@ $("#applyJson").onclick=()=>{
   catch(e){ $("#wireMsg").innerHTML=`<span style="color:var(--bad)">Invalid JSON: ${esc(e.message)}</span>`; return; }
   try{ adoptBody(body); }
   catch(e){ $("#wireMsg").innerHTML=`<span style="color:var(--bad)">${esc(e.message)}</span>`; return; }
-  $("#wireMsg").innerHTML=`<span style="color:var(--ok)">Applied — controls updated.</span>`;
+  $("#wireMsg").innerHTML=`<span style="color:var(--ok)">Applied, controls updated.</span>`;
   renderSrcs(); renderQs(); sync();
 };
 $("#revertJson").onclick=()=>{ $("#wireEdit").value=JSON.stringify(buildBody(),null,2); $("#wireMsg").textContent=""; };
@@ -267,7 +267,7 @@ async function callJev(body){
 async function send(){
   if(tab==="edit"){ $("#applyJson").click(); if($("#wireMsg").textContent.includes("Invalid")) return; }
   const body=buildBody();
-  if(!body.state) return show({hint:"Add at least one source of state — Jev only reasons over what you send."});
+  if(!body.state) return show({hint:"Add at least one source of state, Jev only reasons over what you send."});
   if(!Object.keys(body.questions).length)
     return show({hint:"Add a question. A Choice needs ≥2 options; a Score needs ≥2 levels."});
 
@@ -288,7 +288,7 @@ async function send(){
         if(!r.ok) throw new Error(d.error??`HTTP ${r.status}`);
         factors=d.factors; decMs=d._ms;
       }catch(e){ decErr=(e.name==="TimeoutError"||e.name==="AbortError")
-        ? "local model did not answer in 180s — is it loaded?" : String(e.message??e); }
+        ? "local model did not answer in 180s, is it loaded?" : String(e.message??e); }
     }
     $("#ask").textContent="Sending…";
     const full={...body,questions:{...body.questions}};
@@ -327,7 +327,7 @@ function show(o){
   if(o.err){ jevState("error"); return void(out.innerHTML=`<div class="holo err"><b>Error</b><div style="margin-top:6px">${esc(o.err)}</div></div>`); }
   if(o.waiting) return void(out.innerHTML=`<div class="wait"><div class="spin"></div>
     <div style="flex:1"><b>Local model is proposing factors</b>
-    <div class="hint" style="margin-top:2px">Runs on your machine — roughly 15–30s. Jev then judges
+    <div class="hint" style="margin-top:2px">Runs on your machine, roughly 15–30s. Jev then judges
     every proposed factor inside the same single call.</div><div class="track"><i></i></div></div></div>`);
 
   const {data,meta}=o, A=data.answers??{}, gate=+$("#gate").value/100;
@@ -348,7 +348,7 @@ function show(o){
       <span class="spacer"></span>${deltaTag(p)}
       <span class="tag ${Math.abs(p-.5)>=.2?"act":"hold"}">${Math.abs(p-.5)>=.2?"decisive":"split"}</span></div>
       ${bar(p,col)}<div class="muted"><span class="mono" data-count="${p}">${pct(p)}</span> probability of yes
-      ${Math.abs(p-.5)<.1?" — genuinely undecided, not a middling yes":""}</div>
+      ${Math.abs(p-.5)<.1?", genuinely undecided, not a middling yes":""}</div>
       <div class="hint mono">${esc(pid)} · noul</div>${tail}</div>`;
   }else if(v?.type==="choice"){
     html+=`<div class="holo live"><div class="row"><div class="big">${esc(v.choice)}</div>
@@ -396,7 +396,7 @@ function show(o){
       ${rows}${weak&&weak.p<.5?`<div class="hint">Weakest link: <b style="color:var(--ink)">${esc(weak.f.label??weak.f.id)}</b> at ${pct(weak.p)}.</div>`:""}</div>`;
   }
   if(meta.decErr) html+=`<div class="card err" style="margin-bottom:var(--s2)"><b>Factors unavailable</b>
-    <div class="hint" style="color:inherit">${esc(meta.decErr)} — the verdict above is unaffected.</div></div>`;
+    <div class="hint" style="color:inherit">${esc(meta.decErr)}, the verdict above is unaffected.</div></div>`;
 
   /* why */
   if(A._support||A._obstacles||A._enough){
@@ -406,14 +406,14 @@ function show(o){
     html+=`<div class="card" style="margin-bottom:var(--s2)"><h2>Why</h2>
       ${A._support?line("support",levelOf(A._support),scFrac(A._support),"var(--ok)"):""}
       ${A._obstacles?line("obstacles",levelOf(A._obstacles),scFrac(A._obstacles),"var(--bad)"):""}
-      ${A._enough?line("evidence",A._enough.noul>=.6?"sufficient":A._enough.noul<=.4?"thin — answer is a guess":"borderline",
+      ${A._enough?line("evidence",A._enough.noul>=.6?"sufficient":A._enough.noul<=.4?"thin, answer is a guess":"borderline",
         A._enough.noul,A._enough.noul>=.6?"var(--ok)":"var(--warn)"):""}</div>`;
   }
 
   const muted=SRCS.filter(s=>!s.on&&s.text.trim());
   if(muted.length) html+=`<div class="hint" style="margin-bottom:var(--s2)">Answered without
     ${muted.map(s=>`<b style="color:var(--ink)">${esc(s.label||"an unlabelled source")}</b>`).join(", ")}.</div>`;
-  else if(!asked) html+=`<div class="nudge">Now <b>untick a source</b> and send again — the verdict
+  else if(!asked) html+=`<div class="nudge">Now <b>untick a source</b> and send again, the verdict
     shows how much it depended on it.</div>`;
 
   out.innerHTML=html;
@@ -442,7 +442,7 @@ function consistency(meta){
     <div class="row"><span class="muted">consistency over ${vals.length} runs</span><span class="spacer"></span>
       <span class="delta mono ${spread<=.05?"up":spread>.15?"down":""}">±${(spread*50).toFixed(1)}pt</span></div>
     <div class="runs">${vals.map(x=>`<i style="height:${Math.max(4,x*100)}%" title="${pct(x)}"></i>`).join("")}</div>
-    <div class="hint mono">${vals.map(pct).join(" · ")}${spread<=.05?" — stable across repeats":""}</div></div>`;
+    <div class="hint mono">${vals.map(pct).join(" · ")}${spread<=.05?", stable across repeats":""}</div></div>`;
 }
 function countUp(){
   const el=$("[data-count]"); if(!el||REDUCED) return;

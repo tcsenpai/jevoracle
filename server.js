@@ -80,8 +80,8 @@ RULES:
 - Cover DIFFERENT dimensions (money, capability, timing, external conditions, risk).
 - Do not restate the main question.`;
 
-/* Passa per askJSON, che spegne il reasoning e ritenta fino a 4 volte se il
- * formato non regge. Misurato su questo stesso prompt: 3.2s contro 24.6s. */
+/* Goes through askJSON, which turns off reasoning and retries up to 4 times
+ * if the format does not hold up. Measured on this same prompt: 3.2s versus 24.6s. */
 async function decompose({ question, context, n = 5 }) {
   const need = Math.min(3, n);
   const usable = f => typeof f?.q === "string" && f.q.trim().length > 15;
@@ -95,9 +95,9 @@ async function decompose({ question, context, n = 5 }) {
     temperature: 0.4,
     timeoutMs: 45_000,
     validate: d => {
-      if (!Array.isArray(d?.factors)) return "manca l'array `factors`";
+      if (!Array.isArray(d?.factors)) return "missing `factors` array";
       const good = d.factors.filter(usable).length;
-      return good >= need ? null : `servono almeno ${need} fattori con una domanda vera, trovati ${good}`;
+      return good >= need ? null : `need at least ${need} factors with a real question, found ${good}`;
     },
   });
 
@@ -115,13 +115,19 @@ import { getConfig, saveConfig, FIELDS, DEFAULT_CONFIG } from "./engine/config.j
 import { runExperiment, listExperiments, VARIANTS } from "./engine/experiment.js";
 import { askJSON, LLMError } from "./platform/llm.js";
 import { openDB as openPlatformDB, platformRoutes } from "./platform/api.js";
+import { runBot as runBotWith } from "./platform/runner.js";
+import { settleBots } from "./platform/settle.js";
+import { startScheduler } from "./platform/scheduler.js";
 
 const DB = openStore(env("ENGINE_DB", "data/engine.db"));
 const PDB = openPlatformDB(env("JEVKNOWS_DB", "data/jevknows.db"));
+
+// Automatic outcome check. Disabled with SCHEDULER=off, and
+// the interval is changed with SCHEDULER_MINUTES.
+const SCHED = env("SCHEDULER", "on") === "off" ? null
+  : startScheduler(PDB, { intervalMs: Number(env("SCHEDULER_MINUTES", "15")) * 60_000 });
 const platform = platformRoutes(PDB, {
-  // l'esecuzione vera dei bot arriva con lo scheduler; per ora la route esiste
-  // e dice onestamente che non c'e', invece di fingere di aver avviato qualcosa
-  runBot: null,
+  runBot: (id, mode, body) => runBotWith(id, mode, { ...body, db: PDB, apiKey: KEY }),
 });
 let scanning = false;   // one scan at a time; it spends API calls
 
@@ -189,7 +195,7 @@ const server = Bun.serve({
       }
     }
 
-    // route della piattaforma JevKnows: /api/bots...
+    // JevKnows platform routes: /api/bots...
     const fromPlatform = await platform(req, pathname);
     if (fromPlatform) return fromPlatform;
 
@@ -221,6 +227,13 @@ const server = Bun.serve({
     if (pathname === "/api/engine/settle") {
       if (req.method !== "POST") return json({ error: "Use POST." }, 405);
       try { return json(await settleOpen({ db: DB })); }
+      catch (err) { return json({ error: String(err.message ?? err) }, 500); }
+    }
+
+    // settles the open predictions of ALL bots on the JevKnows platform
+    if (pathname === "/api/settle") {
+      if (req.method !== "POST") return json({ error: "Use POST." }, 405);
+      try { return json(await settleBots(PDB)); }
       catch (err) { return json({ error: String(err.message ?? err) }, 500); }
     }
 
@@ -291,15 +304,33 @@ const server = Bun.serve({
       return json({ decompose: DEC_URLS.length > 0, model: DEC_MODEL });
 
     if (pathname === "/healthz") return new Response("ok", { status: 200 });
+    /* Status of the local engines, and manual shutdown to free memory. */
+    if (pathname === "/api/engines") {
+      const { kevStatus, stopKev } = await import("./platform/kev-process.js");
+      const { stopLaya } = await import("./platform/laya.js");
+      if (req.method === "POST") {
+        stopKev("requested from the dashboard"); stopLaya();
+        return Response.json({ stopped: true, kev: kevStatus() });
+      }
+      return Response.json({ kev: kevStatus() });
+    }
+
+    if (pathname === "/api/scheduler")
+      return Response.json(SCHED ? SCHED.status() : { disabled: true });
 
     // Static files. Path is resolved against public/ and cannot escape it.
-    const rel = pathname === "/" ? "/index.html" : pathname;
+    // The root is the platform: the console stays reachable at /console.
+    const rel = pathname === "/" ? "/jevknows.html"
+      : pathname === "/console" ? "/index.html"
+      : pathname;
     if (rel.includes("..")) return new Response("Not found", { status: 404 });
     const file = Bun.file(`public${rel}`);
     if (!(await file.exists())) return new Response("Not found", { status: 404 });
-    const immutable = rel !== "/index.html";
+    // html/css/js change on every edit: no cache, or the user sees the old
+    // version and has to guess that a hard refresh is needed.
+    const cacheable = /\.(svg|png|woff2?|ico)$/.test(rel);
     return new Response(file, {
-      headers: { "Cache-Control": immutable ? "public, max-age=3600" : "no-cache" },
+      headers: { "Cache-Control": cacheable ? "public, max-age=3600" : "no-cache" },
     });
   },
 });

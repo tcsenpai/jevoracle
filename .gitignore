@@ -20,3 +20,8 @@ AGENTS.md
 
 # Paper trading record, local to each run
 data/
+__pycache__/
+*.pyc
+
+# Stray ddgs output dumps (the CLI writes these into the CWD)
+news_*.json
